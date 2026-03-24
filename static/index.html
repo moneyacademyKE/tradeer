@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institutional Trading Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>QuantLab<span>_Hickey</span></h1>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">EQUITY: <span id="balance-display">$0.00</span></div>
+                <div class="stat-item">PRICE: <span id="last-price">$0.00</span></div>
+                <div class="stat-item" id="price-change-container"><span id="price-change">+0.00%</span></div>
+                <div class="stat-item" id="bot-status">CORE ACTIVE</div>
+            </div>
+        </header>
+
+        <main>
+            <section class="leaderboard">
+                <div class="section-header">
+                    <h2>Strategy Pool <span class="badge" id="experiment-badge">200 EXPERIMENTS</span></h2>
+                </div>
+                <div class="grid" id="experiment-list">
+                    <!-- Strategy Cards injected here -->
+                </div>
+            </section>
+
+            <div class="details-grid">
+                <section class="panel glass pulse-monitor">
+                    <h3>Live Signal Pulse</h3>
+                    <div class="pulse-grid" id="pulse-grid">
+                        <!-- Top signals pulsed here -->
+                    </div>
+                </section>
+
+                <section class="panel glass code-monitor">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="static">Signals.py</button>
+                        <button class="tab-btn" data-tab="dynamic">Dynamic_Signals.py</button>
+                    </div>
+                    <pre id="strategy-code">Fetching logic...</pre>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Strategy Modal -->
+    <div id="strategy-modal" class="modal">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="modal-title">Strategy Detail</h2>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </header>
+            <div class="modal-scroll">
+                <div id="modal-stats"></div>
+                <h3>Logic Architecture</h3>
+                <pre id="modal-code"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
