@@ -16,33 +16,50 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 MAX_POOL_SIZE = 200
 SIGNALS_PATH = "src/signals.py"
 
+RHAI_BASE_STRATEGY = """
+// Rhai Base Scalper Strategy
+// The Rust DO injects: 'price', 'rsi_2', 'roc', 'momentum' into scope.
+
+if rsi_2 < 20.0 {
+    return 1; // BUY
+} else if rsi_2 > 80.0 {
+    return -1; // SELL
+} else {
+    return 0; // HOLD
+}
+"""
+
 MUTATION_PROMPT = """
 As an expert quantitative trader, you are part of an evolutionary research loop.
-You are given the code for a successful "Parent" strategy. 
+You are given the code for a successful "Parent" strategy written in Rhai. 
 Your task is to create a "Child" strategy by applying a mutation (parameter tweak or logic variation).
 
 ### Strategy Generation Guidelines:
-You are an Extreme Aggression Quantitative Researcher. 
-Your goal is to generate HYPER-ACTIVE scalping strategies for BTC/USDT.
-CRITICAL: Every strategy MUST output a BUY or SELL signal every 60 seconds. Long-term 'HOLD' is unauthorized.
-Strategies should exploit micro-volatility, order flow imbalances, and high-frequency oscillators.
+1. You are an Extreme Aggression Quantitative Researcher. 
+2. Your goal is to generate HYPER-ACTIVE scalping strategies for BTC/USDT.
+3. Every strategy MUST output a BUY (1) or SELL (-1) frequently. Long-term HOLD (0) is unauthorized.
+4. Strategies exploit micro-volatility, order flow imbalances, and high-frequency oscillators.
 
-### Parent Strategy Code:
-```python
+### Variables injected by the Rust Core:
+- `price` (f64): Current asset price
+- `rsi_2` (f64): 2-period RSI
+- `roc` (f64): Rate of change over 3 periods
+- `momentum` (f64): Short term momentum delta
+
+### Parent Rhai Script:
+```rhai
 {parent_code}
 ```
 
 ### Output Requirements:
 You MUST return a JSON object with the following keys:
-1. "name": A short semantic name for the strategy (e.g. "RSI-Trend-Reversal").
+1. "name": A short semantic name for the strategy (e.g. "Rhai-RSI-Reversal").
 2. "explanation": A 1-2 sentence explanation of what this specific mutation does and why it might work.
-3. "code": The full python code for the `calculate_dynamic_signals(state: WorldState, history: Dict[str, List[Ticker]]) -> Dict[str, float]` function.
-The function must return a dictionary with `gemini_buy` and `gemini_sell` (boolean values).
+3. "code": The full Rhai script replacing the parent logic. The script MUST end with a `return 1;` (BUY), `return -1;` (SELL), or `return 0;` (HOLD).
 
 ### Code Constraints:
-1. The code must be a pure function.
-2. Return ONLY the JSON object. Do not include markdown blocks around the JSON itself, just the raw string or a json code block.
-3. The function must return a dictionary with `gemini_buy` and `gemini_sell`.
+1. The code must be valid Rhai script format (like Rust/JS).
+2. Return ONLY the JSON object. Do not include markdown blocks around the JSON itself.
 """
 
 def get_gemini_json(prompt: str):
@@ -70,9 +87,7 @@ def run_evolution():
         print("AI Researcher: No stats yet. Bootstrapping...")
         # Bootstrap with 5 initial strategies from base logic if pool is empty
         if len(POOL.get_all()) < 5:
-            with open(SIGNALS_PATH, "r") as f:
-                base_code = f.read()
-            prompt = MUTATION_PROMPT.format(parent_code=base_code)
+            prompt = MUTATION_PROMPT.format(parent_code=RHAI_BASE_STRATEGY)
             for i in range(5):
                 data = get_gemini_json(prompt)
                 if data and "code" in data:
@@ -100,8 +115,7 @@ def run_evolution():
         top_performers = sorted_ids[:5] if sorted_ids else []
         for i in range(num_to_spawn):
             if not top_performers:
-                with open(SIGNALS_PATH, "r") as f:
-                    parent_code = f.read()
+                parent_code = RHAI_BASE_STRATEGY
                 parent_id = "base"
             else:
                 parent_id = random.choice(top_performers)

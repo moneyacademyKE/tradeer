@@ -1,7 +1,17 @@
-# Patterns: Rich Hickey Trading Bot Implementation
+# Quant Lab Patterns
 
-- **State Transition Pattern**: `next_state(state, event) -> (new_state, commands)`.
-- **Data Normalization Pattern**: Immediate conversion of external (CCXT) JSON into internal frozen Pydantic types.
-- **Signal-as-Data Pattern**: Signals are pure projections of the world state, not stateful indicators in a class.
-- **Risk-as-Filter Pattern**: Risk management acts as a final pure filter on proposed commands before they hit the imperative shell.
-- **State Atom Pattern**: A simple container that supports an atomic `swap` of the entire state value, ensuring that readers always see a consistent, point-in-time snapshot.
+## The "Fast-Forward" Warmup
+- **Pattern**: Initialize a large population by playing back 1000 candles in a vectorized loop (or parallel bash) before entering the live `while True` loop.
+- **Benefit**: Ensures all 50+ metrics (Sharpe, Kelly, etc.) are available the moment the dashboard opens.
+
+## Silent-Catch Network IO
+- **Pattern**: Wrap all unauthenticated exchange calls (tickers, balances) in a silent `try/except` that returns the last known value.
+- **Benefit**: Keeps the high-frequency terminal "pristine" and focused on alpha logs rather than infrastructure noise.
+
+## Pure Logic Mutation
+- **Pattern**: Mutate only the `calculate_dynamic_signals` function string via LLM, then `exec` in a sandbox-like dictionary.
+- **Hickey Principle**: Treating code as data allows for extreme extensibility without complecting the core execution engine.
+
+## The WebAssembly Edge Sandbox
+- **Pattern**: Instead of heavy Python containers, compile the core execution loop (Durable Object) to WebAssembly (WASM). Embed `Rhai` to execute dynamic AI scripts.
+- **Benefit**: Achieves zero-latency WebSocket processing at the Cloudflare Edge while maintaining the flexibility of dynamic LLM-generated logic.

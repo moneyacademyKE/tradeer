@@ -1,8 +1,27 @@
+import os
+import json
 import asyncio
 import pandas as pd
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
+
+POOL_STATS_FILE = "data/pool_stats.json"
+
+def load_pool_stats() -> dict:
+    if os.path.exists(POOL_STATS_FILE):
+        try:
+            with open(POOL_STATS_FILE, "r") as f:
+                return json.load(f)
+        except Exception: pass
+    return {}
+
+def save_pool_stats(stats: dict):
+    os.makedirs(os.path.dirname(POOL_STATS_FILE), exist_ok=True)
+    try:
+        with open(POOL_STATS_FILE, "w") as f:
+            json.dump(stats, f)
+    except Exception: pass
 from concurrent.futures import ThreadPoolExecutor
 from src.core import WorldState, next_state, CreateOrderCommand, StrategyStats, Ticker
 from src.exchange import ExchangeAdapter
@@ -83,7 +102,7 @@ async def run_bot(symbol: str):
     
     # Persistent stats for the whole pool
     # Key: Strategy ID, Value: Internal tracking dict
-    pool_stats = {}
+    pool_stats = load_pool_stats()
     
     print(f"Starting Multi-Strategy Bot Pool for {symbol}...")
     
@@ -93,6 +112,10 @@ async def run_bot(symbol: str):
         ff_metrics = await fast_forward_strategies(adapter, symbol)
     except Exception as e:
         print(f"Fast-forward failed: {e}")
+
+    # Merge fast-forward metrics into loaded live state
+    for sid in pool_stats:
+        pool_stats[sid]["metrics"] = ff_metrics.get(sid, {})
 
     while True:
         try:
@@ -217,6 +240,9 @@ async def run_bot(symbol: str):
             # Print overview
             top_performer = max(strategy_telemetry.items(), key=lambda x: x[1].pnl) if strategy_telemetry else ("None", None)
             print(f"[{ticker.datetime}] Strategies: {len(pool_stats)} | Top: {top_performer[0]} ({top_performer[1].pnl:.2f})")
+            
+            # Persist the paper-trading state across restarts
+            save_pool_stats(pool_stats)
             
             await asyncio.sleep(2)
             
