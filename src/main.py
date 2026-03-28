@@ -64,11 +64,18 @@ async def fast_forward_strategies(adapter: ExchangeAdapter, symbol: str):
         # Here we simulate historical performance based on the strategy's DNA
         # since executing 'exec()' 43,000 times is still slow.
         # Real backtest would execute the signals.
+        was_in = False
         for r in returns_array:
             # Placeholder: 60% probability of being in a trade for testing analytics
             # In a production version, we would call s.execute(...) here.
             is_in = hash(s.id) % 100 > 40 
             periodic_ret = r if is_in else 0.0
+            
+            # Apply 0.1% fee on state flip to penalize over-trading
+            if is_in != was_in:
+                periodic_ret -= 0.001
+            was_in = is_in
+            
             rets.append(periodic_ret)
             equity.append(equity[-1] * (1 + periodic_ret))
             
@@ -142,15 +149,15 @@ async def run_bot(symbol: str):
                 if rsi_2 < 20: 
                     if current_b["pos"] <= 0: # Buy if flat or short
                         if current_b["pos"] < 0: # Close short first
-                            trade_pnl = (current_b["entry"] - price)
+                            trade_pnl = (current_b["entry"] - (price * 1.001))
                             current_b["pnl"] += trade_pnl
                             current_b["trades"] += 1
                             if trade_pnl > 0: current_b["wins"] += 1
-                        current_b["pos"] = 1.0; current_b["entry"] = price; current_b["action"] = "BUY"
+                        current_b["pos"] = 1.0; current_b["entry"] = price * 1.001; current_b["action"] = "BUY"
                 elif rsi_2 > 80:
                     if current_b["pos"] >= 0: # Sell if flat or long
                         if current_b["pos"] > 0: # Close long first
-                            trade_pnl = (price - current_b["entry"])
+                            trade_pnl = ((price * 0.999) - current_b["entry"])
                             current_b["pnl"] += trade_pnl
                             current_b["trades"] += 1
                             if trade_pnl > 0: current_b["wins"] += 1
@@ -159,7 +166,7 @@ async def run_bot(symbol: str):
                     current_b["action"] = "SCALP"
             
             # Unrealized P/L and Peak for Drawdown
-            current_total_pnl_b = current_b["pnl"] + (price - current_b["entry"] if current_b["pos"] > 0 else 0)
+            current_total_pnl_b = current_b["pnl"] + ((price * 0.999) - current_b["entry"] if current_b["pos"] > 0 else 0)
             current_b["current_pnl"] = current_total_pnl_b
             if current_total_pnl_b > current_b["peak"]:
                 current_b["peak"] = current_total_pnl_b
@@ -189,9 +196,9 @@ async def run_bot(symbol: str):
                 
                 s_stats = pool_stats[s_id]
                 if s_signals.get("gemini_buy") and s_stats["pos"] == 0:
-                    s_stats["pos"] = 1.0; s_stats["entry"] = price; s_stats["action"] = "BUY"
+                    s_stats["pos"] = 1.0; s_stats["entry"] = price * 1.001; s_stats["action"] = "BUY"
                 elif s_signals.get("gemini_sell") and s_stats["pos"] > 0:
-                    trade_pnl = (price - s_stats["entry"])
+                    trade_pnl = ((price * 0.999) - s_stats["entry"])
                     s_stats["pnl"] += trade_pnl
                     s_stats["trades"] += 1
                     if trade_pnl > 0: s_stats["wins"] += 1
@@ -199,7 +206,7 @@ async def run_bot(symbol: str):
                 else:
                     s_stats["action"] = "HOLD"
                 
-                current_total_pnl = s_stats["pnl"] + (price - s_stats["entry"] if s_stats["pos"] > 0 else 0)
+                current_total_pnl = s_stats["pnl"] + ((price * 0.999) - s_stats["entry"] if s_stats["pos"] > 0 else 0)
                 s_stats["current_pnl"] = current_total_pnl
                 
                 # Drawdown calculation

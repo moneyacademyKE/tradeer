@@ -73,37 +73,51 @@ Command = Union[CreateOrderCommand, CancelOrderCommand]
 
 def next_state(
     state: WorldState, 
-    event: Union[Ticker, Order, Dict[str, float]]
+    event: Optional[Union[Ticker, Order, Dict[str, float]]] = None
 ) -> Tuple[WorldState, List[Command]]:
     """
-    Pure function: (State, Event) -> (NewState, Commands)
-    This is the only place where 'logic' happens.
+    The Pure State-Transition Function: (State, Event) -> (NewState, Commands)
+    This is the only place where the 'World' evolves.
     """
+    # 1. Start with values from the current state
     new_tickers = dict(state.tickers)
     new_orders = dict(state.orders)
     new_positions = dict(state.positions)
     new_balance = dict(state.balance)
     new_signals = dict(state.signals)
+    new_strategy_stats = dict(state.strategy_stats)
     
-    commands: List[Command] = []
-
+    # 2. Process the event (Update facts)
     if isinstance(event, Ticker):
         new_tickers[event.symbol] = event
     elif isinstance(event, Order):
         new_orders[event.id] = event
+        # Logic to update positions based on closed orders
+        if event.status == "closed":
+             # Functional position update would go here
+             pass
     elif isinstance(event, dict):  # Assume balance update
         new_balance.update(event)
 
-    # Note: Logic for generating commands based on new_signals 
-    # would be called here (e.g. from signals.py)
+    # 3. Derive new signals (Pure calculation)
+    # This keeps the 'process' of calculation separate from the 'data'
+    from src.signals import calculate_signals
+    # We pass a snapshot of the tickers to calculate_signals
+    new_signals = calculate_signals(state, new_tickers)
     
+    # 4. Generate Commands (Strategy Logic)
+    commands: List[Command] = []
+    # (Strategy logic would be called here, returning only Commands)
+    
+    # 5. Build and return the new Immutable State
     new_state = WorldState(
         timestamp=int(datetime.now().timestamp() * 1000),
         tickers=new_tickers,
         orders=new_orders,
         positions=new_positions,
         balance=new_balance,
-        signals=new_signals
+        signals=new_signals,
+        strategy_stats=new_strategy_stats
     )
     
     return new_state, commands
