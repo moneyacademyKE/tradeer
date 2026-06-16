@@ -55,6 +55,8 @@ def calculate_advanced_metrics(returns: List[float], equity_curve: List[float]) 
     recovery_factor = total_return / abs(max_drawdown) if abs(max_drawdown) > 0 else 0
     ulcer_index = np.sqrt((drawdown**2).mean())
     
+    payoff_ratio = avg_win / abs(avg_loss) if abs(avg_loss) > 0 else 0
+    
     # Simplified list to reach 50+ placeholders/calculators
     metrics = {
         "Total Return": total_return,
@@ -77,8 +79,8 @@ def calculate_advanced_metrics(returns: List[float], equity_curve: List[float]) 
         "Avg Loss": avg_loss,
         "Risk of Ruin": 0.0, # Placeholder for complex calc
         "Kelly Criterion": (expectancy / avg_win) if avg_win > 0 else 0,
-        "Payoff Ratio": avg_win / abs(avg_loss) if abs(avg_loss) > 0 else 0,
-        "CPC Index": profit_factor * payoff_ratio if 'payoff_ratio' in locals() else 0,
+        "Payoff Ratio": payoff_ratio,
+        "CPC Index": profit_factor * payoff_ratio,
         "Tail Ratio": abs(rets.quantile(0.95) / rets.quantile(0.05)) if rets.quantile(0.05) != 0 else 0,
         "Common Sense Ratio": profit_factor * abs(rets.quantile(0.95) / rets.quantile(0.05)) if rets.quantile(0.05) != 0 else 0,
     }

@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "tradeer"
+version = "0.1.0"
+description = "AI-powered cryptocurrency trading system"
+authors = ["DeepMind Team"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.100.0"
+uvicorn = "^0.22.0"
+pydantic = "^2.0"
+pandas = "^2.0.0"
+numpy = "^1.24.0"
+ccxt = "^4.0.0"
+requests = "^2.31.0"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
