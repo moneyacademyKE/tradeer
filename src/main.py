@@ -41,7 +41,6 @@ from src.exchange import ExchangeAdapter
 from src.signals import calculate_signals
 from src.data_fetcher import DataFetcher
 from src.state_manager import SHARED_STATE
-from src.performance import log_performance
 from src.strategy_pool import POOL
 from src.analytics import calculate_advanced_metrics
 from typing import Dict, List

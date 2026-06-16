@@ -41,7 +41,7 @@ class StrategyStats(BaseModel):
     position_size: float
     entry_price: float
     action: str
-    metrics: Dict[str, float] = Field(default_factory=dict)
+    metrics: Dict[str, Any] = Field(default_factory=dict)
     explanation: str = ""
     name: str = ""
 

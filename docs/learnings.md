@@ -72,5 +72,10 @@
 - **Problem**: Standard focus outlines are often removed for visual styling reasons, leaving keyboard-only navigators completely blind.
 - **Solution**: Always define visible `:focus-visible` outline indicators with clean offset padding to ensure compliance with a11y standards while maintaining neat layout styles.
 
+## De-complecting API Security (Authentication Decoupling)
+- **Problem**: Embedding HTTP Basic Authentication checks directly into endpoint routes complects business data access with identity management policy. This makes testing tedious (requiring credentials mocking) and local execution restrictive for offline validation tools.
+- **Solution**: Decouple security policy from route logic. Remove route-level credentials dependencies and delegate network-level security to loopback bindings (e.g. binding exclusively to `127.0.0.1`) or reverse proxies. This enforces the "Economy of Mechanism" principle, leaving route handlers simple and easily testable.
+
+
 
 

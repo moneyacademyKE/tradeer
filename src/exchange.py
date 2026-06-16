@@ -3,8 +3,8 @@ import asyncio
 import os
 import pandas as pd
 import logging
-from typing import Dict, List, Optional
-from src.core import Ticker, Order, WorldState
+from typing import Dict, Optional
+from src.core import Ticker, Order
 
 logger = logging.getLogger("tradeer")
 

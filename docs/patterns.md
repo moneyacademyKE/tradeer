@@ -46,6 +46,10 @@
 ## Shimmer Skeleton Loaders
 - **Pattern**: When rendering dynamic collections over async APIs, load a placeholder template using basic CSS-shimmer keyframe animations. It improves perceived load speed, visually scales elements, and prevents sudden page layout shifts.
 
+## Network-Layer Access Isolation
+- **Pattern**: Avoid coding credentials or auth middleware checks directly inside application routes for local-first utility tools. Instead, de-complect the application from access policies by binding API sockets strictly to local loopback addresses (`127.0.0.1`) and leaving the route logic simple. If external access is required, deploy a reverse proxy gateway to terminate authentication.
+
+
 
 
 
