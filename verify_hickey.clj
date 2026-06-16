@@ -6,7 +6,7 @@
 (defn test-api-state []
   (println "--- Testing API State and JSON Compliance ---")
   (try
-    (let [response (http/get "http://localhost:8000/api/state")
+    (let [response (http/get "http://localhost:8001/api/state")
           status (:status response)
           body (json/parse-string (:body response) true)]
       (println "API Response Status:" status)

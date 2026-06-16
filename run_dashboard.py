@@ -12,7 +12,7 @@ async def main():
     researcher_task = asyncio.to_thread(run_forever)
     
     # 3. Start the FastAPI server
-    config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
+    config = uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="info")
     server = uvicorn.Server(config)
     
     await asyncio.gather(

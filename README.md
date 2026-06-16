@@ -76,9 +76,9 @@ python3 run_dashboard.py
 This concurrently boots:
 1. The Trading Bot ticker loop.
 2. The AI Researcher evolutionary strategy generator.
-3. The FastAPI server, bound to `127.0.0.1:8000`.
+3. The FastAPI server, bound to `127.0.0.1:8001`.
 
-Open [http://127.0.0.1:8000/static/index.html](http://127.0.0.1:8000/static/index.html) in your browser. Authenticate using your username and password (defaults to `admin` / `admin`).
+Open [http://127.0.0.1:8001/static/index.html](http://127.0.0.1:8001/static/index.html) in your browser.
 
 ---
 
