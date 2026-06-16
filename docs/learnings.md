@@ -39,3 +39,16 @@
 ## CSS Custom Property Fallbacks
 - **Problem**: Relying on CSS variables without defining them in `:root` results in transparent backgrounds and invisible elements.
 - **Solution**: Maintain a single source of truth in the `:root` design system, or use fallback values: `var(--accent-blue, #3b82f6)`.
+
+## AST-Based Code Sandboxing
+- **Problem**: Python `exec()` with namespace overrides is insecure because dynamic attribute access (`__class__`) is not blocked.
+- **Solution**: Statically parse the code using the `ast` module, rejecting imports, attributes starting with double underscores, and unsafe identifiers before compile-time. Inject a custom `getattr` that checks attribute names at runtime.
+
+## Stateless Dashboard Security
+- **Problem**: Exposing FastAPIs globally (`0.0.0.0`) without credentials leaks account balances and strategies.
+- **Solution**: Bind uvicorn to `127.0.0.1` and wrap endpoints in FastAPI's `HTTPBasic` authentication dependency. Browsers automatically handle Basic Auth prompts for static client requests.
+
+## DOM XSS Prevention & Event Delegation
+- **Problem**: Assigning raw API strings to `innerHTML` creates stored XSS vulnerabilities. Inline event handlers (`onclick`) are fragile and hard to clean.
+- **Solution**: Escape all HTML special characters prior to template insertion. Use parent event delegation listeners (`container.addEventListener("click", ...)`) instead of inline bindings.
+

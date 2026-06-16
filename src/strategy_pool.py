@@ -1,8 +1,10 @@
 import json
 import os
 import uuid
+import logging
 from typing import Dict, Any, List
 
+logger = logging.getLogger("tradeer")
 STRATEGY_POOL_FILE = "strategy_pool.json"
 
 class StrategyMetadata:
@@ -54,7 +56,8 @@ class StrategyPool:
                         self.strategies[s_id] = StrategyMetadata(
                             s["id"], s["code"], s["name"], s.get("explanation", ""), s.get("parent_id")
                         )
-            except:
+            except Exception as e:
+                logger.error(f"Failed to load strategy pool from {STRATEGY_POOL_FILE}: {e}")
                 self.strategies = {}
 
 # Singleton instance

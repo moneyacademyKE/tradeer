@@ -3,6 +3,16 @@
  * Powered by Rich Hickey Principles
  */
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return str.toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 const elements = {
     lastPrice: document.getElementById('last-price'),
     balance: document.getElementById('balance-display'),
@@ -63,11 +73,14 @@ function renderExperiments(state) {
     list.innerHTML = sortedStats.map(([id, stats]) => {
         const pnlClass = stats.pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
         const chartId = `chart-${id.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const escapedId = escapeHtml(id);
+        const escapedName = escapeHtml(stats.name || id);
+        const actionClass = escapeHtml(stats.action.toLowerCase());
         return `
-            <div class="strategy-card" onclick="showStrategyDetail('${id}')">
+            <div class="strategy-card" data-id="${escapedId}">
                 <div class="card-header">
-                    <h3>${stats.name || id}</h3>
-                    <div class="pulse ${stats.action.toLowerCase()}"></div>
+                    <h3>${escapedName}</h3>
+                    <div class="pulse ${actionClass}"></div>
                 </div>
                 <div class="chart-mini" id="${chartId}"></div>
                 <div class="metrics">
@@ -110,7 +123,7 @@ async function showStrategyDetail(id) {
         
         let html = `
             <div class="explanation-box glass">
-                <p>${data.explanation || "De-complected mutation."}</p>
+                <p>${escapeHtml(data.explanation || "De-complected mutation.")}</p>
             </div>
             <div class="stats-grid">
         `;
@@ -118,10 +131,12 @@ async function showStrategyDetail(id) {
         if (stats && stats.metrics) {
             for (const [key, val] of Object.entries(stats.metrics)) {
                 if (key === 'hist_equity' || key === 'hist_returns') continue;
+                const escapedKey = escapeHtml(key);
+                const formattedVal = typeof val === 'number' ? val.toFixed(4) : escapeHtml(val);
                 html += `
                     <div class="stat-card mini glass">
-                        <span class="label">${key}</span>
-                        <span class="value">${typeof val === 'number' ? val.toFixed(4) : val}</span>
+                        <span class="label">${escapedKey}</span>
+                        <span class="value">${formattedVal}</span>
                     </div>
                 `;
             }
@@ -157,6 +172,15 @@ async function updateDashboard() {
 document.getElementById('close-modal').onclick = () => {
     document.getElementById('strategy-modal').style.display = 'none';
 };
+
+// Event delegation for strategy card clicks
+elements.experimentList.addEventListener('click', (e) => {
+    const card = e.target.closest('.strategy-card');
+    if (card) {
+        const id = card.dataset.id;
+        showStrategyDetail(id);
+    }
+});
 
 // Tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {

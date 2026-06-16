@@ -1,5 +1,7 @@
 import os
-from fastapi import FastAPI
+import secrets
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from src.state_manager import SHARED_STATE
 
@@ -8,14 +10,27 @@ app = FastAPI(title="Tradeer-Hickey API")
 # Mount static files for the frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+security = HTTPBasic()
+
+def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, os.getenv("DASHBOARD_USERNAME", "admin"))
+    correct_password = secrets.compare_digest(credentials.password, os.getenv("DASHBOARD_PASSWORD", "admin"))
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
 @app.get("/api/state")
-async def get_state():
+async def get_state(username: str = Depends(authenticate)):
     """Returns the current WorldState as JSON."""
     state = SHARED_STATE.deref()
     return state.model_dump()
 
 @app.get("/api/signals")
-async def get_signals_code():
+async def get_signals_code(username: str = Depends(authenticate)):
     """Returns the source code of active signals for UI visualization."""
     try:
         with open("src/signals.py", "r") as f:
@@ -30,7 +45,7 @@ async def get_signals_code():
         return {"error": str(e)}
 
 @app.get("/api/strategy/{strategy_id}")
-async def get_strategy_detail(strategy_id: str):
+async def get_strategy_detail(strategy_id: str, username: str = Depends(authenticate)):
     from src.strategy_pool import POOL
     if strategy_id == "base":
         with open("src/signals.py", "r") as f:

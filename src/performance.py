@@ -2,6 +2,9 @@ import json
 import os
 from datetime import datetime
 
+import logging
+
+logger = logging.getLogger("tradeer")
 PERFORMANCE_LOG_PATH = "performance_log.json"
 
 def log_performance(timestamp: float, pnl: float, rsi: float, last_price: float):
@@ -22,7 +25,8 @@ def log_performance(timestamp: float, pnl: float, rsi: float, last_price: float)
         try:
             with open(PERFORMANCE_LOG_PATH, "r") as f:
                 logs = json.load(f)
-        except:
+        except Exception as e:
+            logger.error(f"Failed to load performance logs from {PERFORMANCE_LOG_PATH}: {e}")
             logs = []
             
     logs.append(entry)

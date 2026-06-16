@@ -28,3 +28,10 @@
 ## Design System Variable Completeness
 - **Pattern**: Every CSS layout/component variable must map back to a defined `:root` property. If a component introduces specific styling colors (e.g. up/down signals, accents), declare them in the centralized design tokens blocks first to keep styling de-complected.
 
+## AST-Validated Execution Sandbox
+- **Pattern**: Statically analyze untrusted Python code segments using the `ast` compiler module. Walk the nodes to confirm structural rules (no import nodes, no names or attributes prefixed with `__`, and no dangerous builtins) before calling `exec()`.
+
+## Container Event Delegation
+- **Pattern**: When dynamically rendering lists of interactive HTML components (such as strategy details), omit inline Javascript attributes. Render elements with simple `data-*` attributes and bind a single click handler to the parent wrapper using `e.target.closest("[data-*]")` to read the key values safely.
+
+
