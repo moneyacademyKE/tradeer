@@ -52,3 +52,16 @@
 - **Problem**: Assigning raw API strings to `innerHTML` creates stored XSS vulnerabilities. Inline event handlers (`onclick`) are fragile and hard to clean.
 - **Solution**: Escape all HTML special characters prior to template insertion. Use parent event delegation listeners (`container.addEventListener("click", ...)`) instead of inline bindings.
 
+## Collections Deque Performance
+- **Problem**: Calling `pop(0)` on standard lists inside high-frequency loops with hundreds of active elements scales at O(N) and induces CPU overhead.
+- **Solution**: Use `collections.deque(maxlen=K)` to optimize inserts/shifts to O(1) in-memory.
+
+## Retry Decorators vs. Internal Try-Except Blocks
+- **Problem**: Applying a retry decorator to a method that catches all exceptions internally silences the failures, rendering the decorator useless.
+- **Solution**: Split operations into private raw methods that allow exceptions to propagate (decorated with `@async_retry`), and public adapter methods that catch remaining exceptions and apply fallback logic.
+
+## Strategy Drawdown Circuit Breakers
+- **Problem**: Underperforming or buggy evolutionary strategies continue running and consuming resources in dynamic trading pools.
+- **Solution**: Implement circuit breakers that monitor individual strategy drawdown. If a strategy breaches configured limits, deactivate its position, mark status as `BREACHED`, and prune it from the active strategy pool.
+
+

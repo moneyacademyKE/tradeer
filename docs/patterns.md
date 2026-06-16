@@ -34,4 +34,11 @@
 ## Container Event Delegation
 - **Pattern**: When dynamically rendering lists of interactive HTML components (such as strategy details), omit inline Javascript attributes. Render elements with simple `data-*` attributes and bind a single click handler to the parent wrapper using `e.target.closest("[data-*]")` to read the key values safely.
 
+## Raw/Adapter Separation
+- **Pattern**: When applying retry or failure policies to external API clients, decouple the network fetch from the data formatting and fallback rules. Create a private decorated raw fetch method (`_fetch_ticker_raw`) and a public wrapper adapter method (`fetch_ticker`) that coordinates raw calls and fallback policies.
+
+## Evolution Circuit Breaker
+- **Pattern**: Run periodic drawdown checks against in-memory strategy statistics. If a strategy's drawdown exceeds predefined limits, automatically generate close orders, set its state to `BREACHED`, and prune it from the active strategies pool.
+
+
 

@@ -166,8 +166,9 @@ async def run_bot(symbol: str):
 
     # Helper function to simulate/reconstruct history
     def simulate_history(s_id: str) -> tuple:
-        equity = [1000.0]
-        rets = []
+        from collections import deque
+        equity = deque([1000.0], maxlen=1000)
+        rets = deque(maxlen=1000)
         was_in = False
         for r in returns_array:
             is_in = hash(s_id) % 100 > 40
@@ -193,181 +194,207 @@ async def run_bot(symbol: str):
             pool_stats[sid]["returns"] = rets
             pool_stats[sid]["equity_curve"] = eq
             metrics = calculate_advanced_metrics(rets, eq)
-            metrics["hist_equity"] = eq[-100:]
-            metrics["hist_returns"] = rets[-100:]
+            metrics["hist_equity"] = list(eq)[-100:]
+            metrics["hist_returns"] = list(rets)[-100:]
             pool_stats[sid]["metrics"] = metrics
 
-    while True:
-        try:
-            ticker = await adapter.fetch_ticker(symbol)
-            if not ticker:
-                print("Ticker is None (fetching failed or rate limited)")
+    global RUNNING
+    RUNNING = True
+
+    # Register OS signals for graceful shutdown
+    import signal
+    import sys
+    try:
+        loop = asyncio.get_running_loop()
+        def ask_exit():
+            global RUNNING
+            logger.info("Graceful shutdown requested. Exiting trading loop...")
+            RUNNING = False
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, ask_exit)
+    except Exception as e:
+        logger.warning(f"Could not register signal handlers (e.g. not running in main thread): {e}")
+
+    try:
+        while RUNNING:
+            try:
+                ticker = await adapter.fetch_ticker(symbol)
+                if not ticker:
+                    logger.warning("Ticker is None (fetching failed or rate limited)")
+                    await asyncio.sleep(2)
+                    continue
+                history[symbol].append(ticker)
+                if len(history[symbol]) > 100: history[symbol].pop(0)
+                
+                price = ticker.bid
+                
+                # --- 1. Base Strategy Logic (High-Frequency RSI Scalper) ---
+                signals = calculate_signals(state, history)
+                # Using period 2 for extreme sensitivity
+                rsi_2 = signals.get(f"{symbol}_rsi_2")
+                
+                current_b = pool_stats["base"]
+                if rsi_2:
+                    # Extreme Aggression: Flip positions at 20/80
+                    if rsi_2 < 20: 
+                        if current_b["pos"] <= 0: # Buy if flat or short
+                            if current_b["pos"] < 0: # Close short first
+                                trade_pnl = (current_b["entry"] - (price * 1.001))
+                                current_b["pnl"] += trade_pnl
+                                current_b["trades"] += 1
+                                if trade_pnl > 0: current_b["wins"] += 1
+                            current_b["pos"] = 1.0; current_b["entry"] = price * 1.001; current_b["action"] = "BUY"
+                    elif rsi_2 > 80:
+                        if current_b["pos"] >= 0: # Sell if flat or long
+                            if current_b["pos"] > 0: # Close long first
+                                trade_pnl = ((price * 0.999) - current_b["entry"])
+                                current_b["pnl"] += trade_pnl
+                                current_b["trades"] += 1
+                                if trade_pnl > 0: current_b["wins"] += 1
+                            current_b["pos"] = 0; current_b["action"] = "SELL"
+                    else:
+                        current_b["action"] = "SCALP"
+                
+                # Unrealized P/L and Peak for Drawdown
+                current_total_pnl_b = current_b["pnl"] + ((price * 0.999) - current_b["entry"] if current_b["pos"] > 0 else 0)
+                current_b["current_pnl"] = current_total_pnl_b
+                if current_total_pnl_b > current_b["peak"]:
+                    current_b["peak"] = current_total_pnl_b
+                dd_b = current_b["peak"] - current_total_pnl_b
+                if dd_b > current_b["drawdown"]:
+                    current_b["drawdown"] = dd_b
+    
+                # Append to history arrays for base strategy
+                last_eq_b = current_b["equity_curve"][-1] if current_b["equity_curve"] else 1000.0
+                new_eq_b = 1000.0 + current_total_pnl_b
+                periodic_ret_b = (new_eq_b - last_eq_b) / last_eq_b if last_eq_b > 0 else 0.0
+                current_b["returns"].append(periodic_ret_b)
+                current_b["equity_curve"].append(new_eq_b)
+    
+                # --- 2. Dynamic Pool Logic (Parallel Execution for 200 strategies) ---
+                active_strategies = POOL.get_all()
+                
+                def run_strategy(strategy):
+                    s_signals = execute_strategy_code(strategy.code, state, history)
+                    return strategy.id, strategy.name, s_signals
+    
+                # Run in parallel
+                loop_exec = asyncio.get_event_loop()
+                tasks = [loop_exec.run_in_executor(EXECUTOR, run_strategy, s) for s in active_strategies]
+                results = await asyncio.gather(*tasks)
+    
+                for s_id, s_name, s_signals in results:
+                    if s_id not in pool_stats:
+                        rets, eq = simulate_history(s_id)
+                        metrics = calculate_advanced_metrics(rets, eq)
+                        metrics["hist_equity"] = list(eq)[-100:]
+                        metrics["hist_returns"] = list(rets)[-100:]
+                        pool_stats[s_id] = {
+                            "pos": 0.0, "entry": 0.0, "pnl": 0.0, "action": "HOLD", "name": s_name,
+                            "wins": 0, "trades": 0, "drawdown": 0.0, "peak": 0.0,
+                            "returns": rets, "equity_curve": eq, "metrics": metrics
+                        }
+                    
+                    s_stats = pool_stats[s_id]
+                    if s_signals.get("gemini_buy") and s_stats["pos"] == 0:
+                        s_stats["pos"] = 1.0; s_stats["entry"] = price * 1.001; s_stats["action"] = "BUY"
+                    elif s_signals.get("gemini_sell") and s_stats["pos"] > 0:
+                        trade_pnl = ((price * 0.999) - s_stats["entry"])
+                        s_stats["pnl"] += trade_pnl
+                        s_stats["trades"] += 1
+                        if trade_pnl > 0: s_stats["wins"] += 1
+                        s_stats["pos"] = 0; s_stats["action"] = "SELL"
+                    else:
+                        s_stats["action"] = "HOLD"
+                    
+                    current_total_pnl = s_stats["pnl"] + ((price * 0.999) - s_stats["entry"] if s_stats["pos"] > 0 else 0)
+                    s_stats["current_pnl"] = current_total_pnl
+                    
+                    # Drawdown calculation
+                    if current_total_pnl > s_stats["peak"]:
+                        s_stats["peak"] = current_total_pnl
+                    dd = (s_stats["peak"] - current_total_pnl)
+                    if dd > s_stats["drawdown"]:
+                        s_stats["drawdown"] = dd
+    
+                    # Append to history arrays for dynamic strategy
+                    last_eq = s_stats["equity_curve"][-1] if s_stats["equity_curve"] else 1000.0
+                    new_eq = 1000.0 + current_total_pnl
+                    periodic_ret = (new_eq - last_eq) / last_eq if last_eq > 0 else 0.0
+                    s_stats["returns"].append(periodic_ret)
+                    s_stats["equity_curve"].append(new_eq)
+    
+                    signals.update({f"{s_id}_{k}": v for k, v in s_signals.items()})
+    
+                # Prune obsolete strategies from stats if they were removed from POOL
+                pool_ids = {s.id for s in active_strategies} | {"base"}
+                pool_stats = {sid: s for sid, s in pool_stats.items() if sid in pool_ids}
+    
+                # --- 2.5 Concurrently recalculate advanced metrics for active strategies ---
+                async def calc_metrics_for_strat(sid, s):
+                    rets_copy = list(s["returns"])
+                    eq_copy = list(s["equity_curve"])
+                    metrics = await loop_exec.run_in_executor(
+                        EXECUTOR, calculate_advanced_metrics, rets_copy, eq_copy
+                    )
+                    metrics["hist_equity"] = eq_copy[-100:]
+                    metrics["hist_returns"] = rets_copy[-100:]
+                    return sid, metrics
+    
+                metric_tasks = [
+                    calc_metrics_for_strat(sid, s) for sid, s in pool_stats.items()
+                ]
+                metric_results = await asyncio.gather(*metric_tasks)
+                for sid, metrics in metric_results:
+                    pool_stats[sid]["metrics"] = metrics
+    
+                # --- 2.7 Risk Management Drawdown Check ---
+                from src.risk import check_strategy_drawdown
+                max_dd_limit = float(os.getenv("MAX_STRATEGY_DRAWDOWN", "150.0"))
+                risk_commands = check_strategy_drawdown(pool_stats, max_dd_limit, price)
+                for cmd in risk_commands:
+                    await adapter.execute_command(cmd)
+    
+                # --- 3. Update WorldState for Dashboard ---
+                strategy_telemetry = {
+                    sid: StrategyStats(
+                        pnl=s["current_pnl"], 
+                        position_size=s["pos"], 
+                        entry_price=s["entry"], 
+                        action=s["action"],
+                        metrics=s.get("metrics", {}),
+                        name=s["name"],
+                        explanation=POOL.strategies[sid].explanation if sid in POOL.strategies else ""
+                    ) for sid, s in pool_stats.items()
+                }
+    
+                state, _ = next_state(state, ticker)
+                state = state.model_copy(update={
+                    'signals': signals, 
+                    'strategy_stats': strategy_telemetry,
+                    'balance': {'USDT': 1000.0}
+                })
+                
+                SHARED_STATE.reset(state)
+                
+                # Print overview
+                top_performer = max(strategy_telemetry.items(), key=lambda x: x[1].pnl) if strategy_telemetry else ("None", None)
+                print(f"[{ticker.datetime}] Strategies: {len(pool_stats)} | Top: {top_performer[0]} ({top_performer[1].pnl:.2f})")
+                
+                # Persist the paper-trading state across restarts
+                save_pool_stats(pool_stats)
+                
                 await asyncio.sleep(2)
-                continue
-            history[symbol].append(ticker)
-            if len(history[symbol]) > 100: history[symbol].pop(0)
-            
-            price = ticker.bid
-            
-            # --- 1. Base Strategy Logic (High-Frequency RSI Scalper) ---
-            signals = calculate_signals(state, history)
-            # Using period 2 for extreme sensitivity
-            rsi_2 = signals.get(f"{symbol}_rsi_2")
-            
-            current_b = pool_stats["base"]
-            if rsi_2:
-                # Extreme Aggression: Flip positions at 20/80
-                if rsi_2 < 20: 
-                    if current_b["pos"] <= 0: # Buy if flat or short
-                        if current_b["pos"] < 0: # Close short first
-                            trade_pnl = (current_b["entry"] - (price * 1.001))
-                            current_b["pnl"] += trade_pnl
-                            current_b["trades"] += 1
-                            if trade_pnl > 0: current_b["wins"] += 1
-                        current_b["pos"] = 1.0; current_b["entry"] = price * 1.001; current_b["action"] = "BUY"
-                elif rsi_2 > 80:
-                    if current_b["pos"] >= 0: # Sell if flat or long
-                        if current_b["pos"] > 0: # Close long first
-                            trade_pnl = ((price * 0.999) - current_b["entry"])
-                            current_b["pnl"] += trade_pnl
-                            current_b["trades"] += 1
-                            if trade_pnl > 0: current_b["wins"] += 1
-                        current_b["pos"] = 0; current_b["action"] = "SELL"
-                else:
-                    current_b["action"] = "SCALP"
-            
-            # Unrealized P/L and Peak for Drawdown
-            current_total_pnl_b = current_b["pnl"] + ((price * 0.999) - current_b["entry"] if current_b["pos"] > 0 else 0)
-            current_b["current_pnl"] = current_total_pnl_b
-            if current_total_pnl_b > current_b["peak"]:
-                current_b["peak"] = current_total_pnl_b
-            dd_b = current_b["peak"] - current_total_pnl_b
-            if dd_b > current_b["drawdown"]:
-                current_b["drawdown"] = dd_b
-
-            # Append to history arrays for base strategy
-            last_eq_b = current_b["equity_curve"][-1] if current_b["equity_curve"] else 1000.0
-            new_eq_b = 1000.0 + current_total_pnl_b
-            periodic_ret_b = (new_eq_b - last_eq_b) / last_eq_b if last_eq_b > 0 else 0.0
-            current_b["returns"].append(periodic_ret_b)
-            current_b["equity_curve"].append(new_eq_b)
-            if len(current_b["returns"]) > 1000: current_b["returns"].pop(0)
-            if len(current_b["equity_curve"]) > 1000: current_b["equity_curve"].pop(0)
-
-            # --- 2. Dynamic Pool Logic (Parallel Execution for 200 strategies) ---
-            active_strategies = POOL.get_all()
-            
-            def run_strategy(strategy):
-                s_signals = execute_strategy_code(strategy.code, state, history)
-                return strategy.id, strategy.name, s_signals
-
-            # Run in parallel
-            loop = asyncio.get_event_loop()
-            tasks = [loop.run_in_executor(EXECUTOR, run_strategy, s) for s in active_strategies]
-            results = await asyncio.gather(*tasks)
-
-            for s_id, s_name, s_signals in results:
-                if s_id not in pool_stats:
-                    rets, eq = simulate_history(s_id)
-                    metrics = calculate_advanced_metrics(rets, eq)
-                    metrics["hist_equity"] = eq[-100:]
-                    metrics["hist_returns"] = rets[-100:]
-                    pool_stats[s_id] = {
-                        "pos": 0.0, "entry": 0.0, "pnl": 0.0, "action": "HOLD", "name": s_name,
-                        "wins": 0, "trades": 0, "drawdown": 0.0, "peak": 0.0,
-                        "returns": rets, "equity_curve": eq, "metrics": metrics
-                    }
                 
-                s_stats = pool_stats[s_id]
-                if s_signals.get("gemini_buy") and s_stats["pos"] == 0:
-                    s_stats["pos"] = 1.0; s_stats["entry"] = price * 1.001; s_stats["action"] = "BUY"
-                elif s_signals.get("gemini_sell") and s_stats["pos"] > 0:
-                    trade_pnl = ((price * 0.999) - s_stats["entry"])
-                    s_stats["pnl"] += trade_pnl
-                    s_stats["trades"] += 1
-                    if trade_pnl > 0: s_stats["wins"] += 1
-                    s_stats["pos"] = 0; s_stats["action"] = "SELL"
-                else:
-                    s_stats["action"] = "HOLD"
-                
-                current_total_pnl = s_stats["pnl"] + ((price * 0.999) - s_stats["entry"] if s_stats["pos"] > 0 else 0)
-                s_stats["current_pnl"] = current_total_pnl
-                
-                # Drawdown calculation
-                if current_total_pnl > s_stats["peak"]:
-                    s_stats["peak"] = current_total_pnl
-                dd = (s_stats["peak"] - current_total_pnl)
-                if dd > s_stats["drawdown"]:
-                    s_stats["drawdown"] = dd
-
-                # Append to history arrays for dynamic strategy
-                last_eq = s_stats["equity_curve"][-1] if s_stats["equity_curve"] else 1000.0
-                new_eq = 1000.0 + current_total_pnl
-                periodic_ret = (new_eq - last_eq) / last_eq if last_eq > 0 else 0.0
-                s_stats["returns"].append(periodic_ret)
-                s_stats["equity_curve"].append(new_eq)
-                if len(s_stats["returns"]) > 1000: s_stats["returns"].pop(0)
-                if len(s_stats["equity_curve"]) > 1000: s_stats["equity_curve"].pop(0)
-
-                signals.update({f"{s_id}_{k}": v for k, v in s_signals.items()})
-
-            # Prune obsolete strategies from stats if they were removed from POOL
-            pool_ids = {s.id for s in active_strategies} | {"base"}
-            pool_stats = {sid: s for sid, s in pool_stats.items() if sid in pool_ids}
-
-            # --- 2.5 Concurrently recalculate advanced metrics for active strategies ---
-            async def calc_metrics_for_strat(sid, s):
-                rets_copy = list(s["returns"])
-                eq_copy = list(s["equity_curve"])
-                metrics = await loop.run_in_executor(
-                    EXECUTOR, calculate_advanced_metrics, rets_copy, eq_copy
-                )
-                metrics["hist_equity"] = eq_copy[-100:]
-                metrics["hist_returns"] = rets_copy[-100:]
-                return sid, metrics
-
-            metric_tasks = [
-                calc_metrics_for_strat(sid, s) for sid, s in pool_stats.items()
-            ]
-            metric_results = await asyncio.gather(*metric_tasks)
-            for sid, metrics in metric_results:
-                pool_stats[sid]["metrics"] = metrics
-
-            # --- 3. Update WorldState for Dashboard ---
-            strategy_telemetry = {
-                sid: StrategyStats(
-                    pnl=s["current_pnl"], 
-                    position_size=s["pos"], 
-                    entry_price=s["entry"], 
-                    action=s["action"],
-                    metrics=s.get("metrics", {}),
-                    name=s["name"],
-                    explanation=POOL.strategies[sid].explanation if sid in POOL.strategies else ""
-                ) for sid, s in pool_stats.items()
-            }
-
-            state, _ = next_state(state, ticker)
-            state = state.model_copy(update={
-                'signals': signals, 
-                'strategy_stats': strategy_telemetry,
-                'balance': {'USDT': 1000.0}
-            })
-            
-            SHARED_STATE.reset(state)
-            
-            # Print overview
-            top_performer = max(strategy_telemetry.items(), key=lambda x: x[1].pnl) if strategy_telemetry else ("None", None)
-            print(f"[{ticker.datetime}] Strategies: {len(pool_stats)} | Top: {top_performer[0]} ({top_performer[1].pnl:.2f})")
-            
-            # Persist the paper-trading state across restarts
-            save_pool_stats(pool_stats)
-            
-            await asyncio.sleep(2)
-            
-        except Exception as e:
-            # Silence loop errors for cleaner terminal, but print for debugging
-            print(f"Loop error: {e}")
-            await asyncio.sleep(2)
+            except Exception as e:
+                logger.error(f"Loop error: {e}")
+                await asyncio.sleep(2)
+    except asyncio.CancelledError:
+        logger.info("Trading bot loop task cancelled.")
+    finally:
+        logger.info("Shutdown cleanup: saving final states...")
+        save_pool_stats(pool_stats)
+        POOL.save()
 
 if __name__ == "__main__":
     asyncio.run(run_bot('BTC/USDT'))
