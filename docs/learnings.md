@@ -64,4 +64,13 @@
 - **Problem**: Underperforming or buggy evolutionary strategies continue running and consuming resources in dynamic trading pools.
 - **Solution**: Implement circuit breakers that monitor individual strategy drawdown. If a strategy breaches configured limits, deactivate its position, mark status as `BREACHED`, and prune it from the active strategy pool.
 
+## HTML5 Dialog Accessibility
+- **Problem**: Custom overlay `div` modals require tedious focus trapping, escape key listeners, and custom z-index stack handling.
+- **Solution**: Use native `<dialog>` elements. Calling `.showModal()` native method handles focus trapping, Escape closures, and screen reader announcements automatically. Backdrop styling can be fully styled via `::backdrop`.
+
+## Keyboard Focus Visibility
+- **Problem**: Standard focus outlines are often removed for visual styling reasons, leaving keyboard-only navigators completely blind.
+- **Solution**: Always define visible `:focus-visible` outline indicators with clean offset padding to ensure compliance with a11y standards while maintaining neat layout styles.
+
+
 

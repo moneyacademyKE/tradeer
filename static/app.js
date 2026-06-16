@@ -26,6 +26,45 @@ let stateSnapshot = null;
 let lastPriceValue = null;
 let currentSignalsData = { static: '', dynamic: '' };
 let activeTab = 'static';
+let errorBanner = null;
+
+function renderSkeletons() {
+    elements.experimentList.innerHTML = Array(6).fill(0).map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line chart"></div>
+            <div class="skeleton-line metric"></div>
+        </div>
+    `).join('');
+}
+
+function showConnectionError(message) {
+    if (errorBanner) return;
+    errorBanner = document.createElement('div');
+    errorBanner.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #ef4444;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        transition: transform 0.3s ease;
+    `;
+    errorBanner.textContent = message;
+    document.body.appendChild(errorBanner);
+}
+
+function clearConnectionError() {
+    if (errorBanner) {
+        errorBanner.remove();
+        errorBanner = null;
+    }
+}
 
 async function fetchSignalsCode() {
     try {
@@ -107,16 +146,17 @@ function renderExperiments(state) {
 
 async function showStrategyDetail(id) {
     const modal = document.getElementById('strategy-modal');
-    modal.style.display = 'block';
-    
     const statsContainer = document.getElementById('modal-stats');
     const codeContainer = document.getElementById('modal-code');
     const title = document.getElementById('modal-title');
 
     try {
         const response = await fetch(`/api/strategy/${id}`);
+        if (!response.ok) {
+            throw new Error(`Strategy API returned ${response.status}`);
+        }
         const data = await response.json();
-        const stats = stateSnapshot.strategy_stats[id];
+        const stats = stateSnapshot ? stateSnapshot.strategy_stats[id] : null;
 
         title.textContent = data.name || id;
         codeContainer.textContent = data.code || "// Pure logic hidden";
@@ -143,13 +183,23 @@ async function showStrategyDetail(id) {
         }
         html += `</div>`;
         statsContainer.innerHTML = html;
-    } catch (e) { console.error(e); }
+        
+        const modal = document.getElementById('strategy-modal');
+        modal.showModal();
+    } catch (e) {
+        console.error(e);
+        showConnectionError("Failed to load strategy details.");
+    }
 }
 
 async function updateDashboard() {
     try {
         const response = await fetch('/api/state');
+        if (!response.ok) {
+            throw new Error(`State API returned ${response.status}`);
+        }
         const state = await response.json();
+        clearConnectionError();
         stateSnapshot = state;
 
         const ticker = state.tickers["BTC/USDT"];
@@ -166,12 +216,25 @@ async function updateDashboard() {
 
         elements.balance.textContent = `$${(state.balance['USDT'] || 0).toLocaleString()}`;
         renderExperiments(state);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+        showConnectionError("API connection offline. Retrying...");
+        if (!stateSnapshot) {
+            renderSkeletons();
+        }
+    }
 }
 
 document.getElementById('close-modal').onclick = () => {
-    document.getElementById('strategy-modal').style.display = 'none';
+    document.getElementById('strategy-modal').close();
 };
+
+const strategyModal = document.getElementById('strategy-modal');
+strategyModal.addEventListener('click', (e) => {
+    if (e.target === strategyModal) {
+        strategyModal.close();
+    }
+});
 
 // Event delegation for strategy card clicks
 elements.experimentList.addEventListener('click', (e) => {
@@ -193,5 +256,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 setInterval(updateDashboard, 2000);
+renderSkeletons();
 updateDashboard();
 fetchSignalsCode();

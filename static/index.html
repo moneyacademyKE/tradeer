@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tradeer QuantLab Dashboard - Real-time cryptocurrency trading strategies, evolutionary strategy pool analytics, and signal code monitoring.">
     <title>Institutional Trading Lab</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,6 +31,7 @@
                 </div>
                 <div class="grid" id="experiment-list">
                     <!-- Strategy Cards injected here -->
+                    <!-- Loading state skeleton cards can go here initially -->
                 </div>
             </section>
 
@@ -42,9 +44,9 @@
                 </section>
 
                 <section class="panel glass code-monitor">
-                    <div class="tabs">
-                        <button class="tab-btn active" data-tab="static">Signals.py</button>
-                        <button class="tab-btn" data-tab="dynamic">Dynamic_Signals.py</button>
+                    <div class="tabs" role="tablist">
+                        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="strategy-code" data-tab="static">Signals.py</button>
+                        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="strategy-code" data-tab="dynamic">Dynamic_Signals.py</button>
                     </div>
                     <pre id="strategy-code">Fetching logic...</pre>
                 </section>
@@ -52,12 +54,12 @@
         </main>
     </div>
 
-    <!-- Strategy Modal -->
-    <div id="strategy-modal" class="modal">
+    <!-- Strategy Modal (HTML5 Dialog) -->
+    <dialog id="strategy-modal" class="modal">
         <div class="modal-content">
             <header class="modal-header">
                 <h2 id="modal-title">Strategy Detail</h2>
-                <button class="close-btn" id="close-modal">&times;</button>
+                <button class="close-btn" id="close-modal" aria-label="Close modal">&times;</button>
             </header>
             <div class="modal-scroll">
                 <div id="modal-stats"></div>
@@ -65,7 +67,7 @@
                 <pre id="modal-code"></pre>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <script src="app.js"></script>
 </body>

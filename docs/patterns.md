@@ -40,5 +40,12 @@
 ## Evolution Circuit Breaker
 - **Pattern**: Run periodic drawdown checks against in-memory strategy statistics. If a strategy's drawdown exceeds predefined limits, automatically generate close orders, set its state to `BREACHED`, and prune it from the active strategies pool.
 
+## Accessible Native Modal
+- **Pattern**: Avoid custom layout overlay structures. Leverage `<dialog>` HTML5 blocks, show them programmatically via `.showModal()`, close them using `.close()`, and attach a click event listener on the element to close when clicked targets match the dialog backdrop container natively.
+
+## Shimmer Skeleton Loaders
+- **Pattern**: When rendering dynamic collections over async APIs, load a placeholder template using basic CSS-shimmer keyframe animations. It improves perceived load speed, visually scales elements, and prevents sudden page layout shifts.
+
+
 
 

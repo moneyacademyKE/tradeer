@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
-import requests
-import zipfile
 import io
 import os
+import requests
 from typing import Optional
 
 class DataFetcher:
