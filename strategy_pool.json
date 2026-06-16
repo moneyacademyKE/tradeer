@@ -1,351 +1,351 @@
 {
-  "9b39b3cb": {
-    "id": "9b39b3cb",
+  "5814af7a": {
+    "id": "5814af7a",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_2 < 10 and rsi_14 < 40 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 90 and rsi_14 > 60:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S00_9b39b3",
+    "name": "S00_5814af",
     "explanation": "autoresearch iter 0",
     "parent_id": null
   },
-  "d0d5c63d": {
-    "id": "d0d5c63d",
+  "f49dc0f8": {
+    "id": "f49dc0f8",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    signals = {}\n    if rsi_14 < 30:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 70:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S01_d0d5c6",
+    "name": "S01_f49dc0",
     "explanation": "autoresearch iter 1",
     "parent_id": null
   },
-  "e03a3f70": {
-    "id": "e03a3f70",
+  "5ca5a538": {
+    "id": "5ca5a538",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    signals = {}\n    if rsi_2 < 5 and rsi_14 < 30:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 95 and rsi_14 > 70:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S02_e03a3f",
+    "name": "S02_5ca5a5",
     "explanation": "autoresearch iter 4",
     "parent_id": null
   },
-  "1afa96cb": {
-    "id": "1afa96cb",
+  "e301b53f": {
+    "id": "e301b53f",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    signals = {}\n    if rsi_14 > 50 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 < 50:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S03_1afa96",
+    "name": "S03_e301b5",
     "explanation": "autoresearch iter 5",
     "parent_id": null
   },
-  "e3190907": {
-    "id": "e3190907",
+  "1c9a8812": {
+    "id": "1c9a8812",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 1:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 99:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S04_e31909",
+    "name": "S04_1c9a88",
     "explanation": "autoresearch iter 12",
     "parent_id": null
   },
-  "eb9bccc7": {
-    "id": "eb9bccc7",
+  "7ab2c443": {
+    "id": "7ab2c443",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 80:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 69:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S05_eb9bcc",
+    "name": "S05_7ab2c4",
     "explanation": "autoresearch iter 15",
     "parent_id": null
   },
-  "8037d790": {
-    "id": "8037d790",
+  "5bf4593a": {
+    "id": "5bf4593a",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 96:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 38:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S06_8037d7",
+    "name": "S06_5bf459",
     "explanation": "autoresearch iter 18",
     "parent_id": null
   },
-  "ae067167": {
-    "id": "ae067167",
+  "029843d3": {
+    "id": "029843d3",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 25 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 75:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S07_ae0671",
+    "name": "S07_029843",
     "explanation": "autoresearch iter 23",
     "parent_id": null
   },
-  "a30ee248": {
-    "id": "a30ee248",
+  "77aafeab": {
+    "id": "77aafeab",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 33 and ema_20 > 0.77:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 6.48:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S08_a30ee2",
+    "name": "S08_77aafe",
     "explanation": "autoresearch iter 24",
     "parent_id": null
   },
-  "c907267f": {
-    "id": "c907267f",
+  "76eb261f": {
+    "id": "76eb261f",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 5.62:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 12:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S09_c90726",
+    "name": "S09_76eb26",
     "explanation": "autoresearch iter 29",
     "parent_id": null
   },
-  "797eabd3": {
-    "id": "797eabd3",
+  "ef8b63f3": {
+    "id": "ef8b63f3",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 47:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 26:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S10_797eab",
+    "name": "S10_ef8b63",
     "explanation": "autoresearch iter 30",
     "parent_id": null
   },
-  "0714de01": {
-    "id": "0714de01",
+  "4fa0cde1": {
+    "id": "4fa0cde1",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 27:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 64:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S11_0714de",
+    "name": "S11_4fa0cd",
     "explanation": "autoresearch iter 31",
     "parent_id": null
   },
-  "fec5a58a": {
-    "id": "fec5a58a",
+  "3d3c1020": {
+    "id": "3d3c1020",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 50 and ema_20 > 0.18:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 90:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S12_fec5a5",
+    "name": "S12_3d3c10",
     "explanation": "autoresearch iter 32",
     "parent_id": null
   },
-  "7da4f5ed": {
-    "id": "7da4f5ed",
+  "d8a8cf2e": {
+    "id": "d8a8cf2e",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 12:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 37:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S13_7da4f5",
+    "name": "S13_d8a8cf",
     "explanation": "autoresearch iter 34",
     "parent_id": null
   },
-  "f88a3ddc": {
-    "id": "f88a3ddc",
+  "31fee148": {
+    "id": "31fee148",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 23:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 7.96:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S14_f88a3d",
+    "name": "S14_31fee1",
     "explanation": "autoresearch iter 42",
     "parent_id": null
   },
-  "c9829b0b": {
-    "id": "c9829b0b",
+  "bbb229e1": {
+    "id": "bbb229e1",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 72 and ema_20 > 0.67:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 97:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S15_c9829b",
+    "name": "S15_bbb229",
     "explanation": "autoresearch iter 47",
     "parent_id": null
   },
-  "72178268": {
-    "id": "72178268",
+  "4c869ed3": {
+    "id": "4c869ed3",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 25:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 91:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S16_721782",
+    "name": "S16_4c869e",
     "explanation": "autoresearch iter 49",
     "parent_id": null
   },
-  "9b5732aa": {
-    "id": "9b5732aa",
+  "d0ed1572": {
+    "id": "d0ed1572",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 2.45:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 10:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S17_9b5732",
+    "name": "S17_d0ed15",
     "explanation": "autoresearch iter 50",
     "parent_id": null
   },
-  "a4666e6e": {
-    "id": "a4666e6e",
+  "f8020faf": {
+    "id": "f8020faf",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 20 and ema_20 > 0.22:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 6.73:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S18_a4666e",
+    "name": "S18_f8020f",
     "explanation": "autoresearch iter 54",
     "parent_id": null
   },
-  "91f5baf6": {
-    "id": "91f5baf6",
+  "62420c67": {
+    "id": "62420c67",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 52:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 93:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S19_91f5ba",
+    "name": "S19_62420c",
     "explanation": "autoresearch iter 58",
     "parent_id": null
   },
-  "6750e8bd": {
-    "id": "6750e8bd",
+  "d9962f79": {
+    "id": "d9962f79",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 98 and ema_20 > 0.65:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 1.77:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S20_6750e8",
+    "name": "S20_d9962f",
     "explanation": "autoresearch iter 63",
     "parent_id": null
   },
-  "aa427bb4": {
-    "id": "aa427bb4",
+  "87c4e287": {
+    "id": "87c4e287",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 26:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 90:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S21_aa427b",
+    "name": "S21_87c4e2",
     "explanation": "autoresearch iter 67",
     "parent_id": null
   },
-  "c997b0bb": {
-    "id": "c997b0bb",
+  "9a8c0c0e": {
+    "id": "9a8c0c0e",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 1.95 and ema_20 > 0.08:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 88:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S22_c997b0",
+    "name": "S22_9a8c0c",
     "explanation": "autoresearch iter 70",
     "parent_id": null
   },
-  "37a71ec9": {
-    "id": "37a71ec9",
+  "5cbfb605": {
+    "id": "5cbfb605",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 25:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 11:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S23_37a71e",
+    "name": "S23_5cbfb6",
     "explanation": "autoresearch iter 73",
     "parent_id": null
   },
-  "07026cb7": {
-    "id": "07026cb7",
+  "3a5d488e": {
+    "id": "3a5d488e",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 17 and ema_20 > 0.8:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 18:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S24_07026c",
+    "name": "S24_3a5d48",
     "explanation": "autoresearch iter 74",
     "parent_id": null
   },
-  "bb780dad": {
-    "id": "bb780dad",
+  "abff7fc0": {
+    "id": "abff7fc0",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 47:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 21:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S25_bb780d",
+    "name": "S25_abff7f",
     "explanation": "autoresearch iter 78",
     "parent_id": null
   },
-  "4320b068": {
-    "id": "4320b068",
+  "7c2d17a5": {
+    "id": "7c2d17a5",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 7.8 and ema_20 > 0.77:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 35:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S26_4320b0",
+    "name": "S26_7c2d17",
     "explanation": "autoresearch iter 80",
     "parent_id": null
   },
-  "0b557202": {
-    "id": "0b557202",
+  "146d7c2e": {
+    "id": "146d7c2e",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 92:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 54:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S27_0b5572",
+    "name": "S27_146d7c",
     "explanation": "autoresearch iter 86",
     "parent_id": null
   },
-  "29f1535b": {
-    "id": "29f1535b",
+  "eeebe844": {
+    "id": "eeebe844",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 31:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 41:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S28_29f153",
+    "name": "S28_eeebe8",
     "explanation": "autoresearch iter 88",
     "parent_id": null
   },
-  "19b82384": {
-    "id": "19b82384",
+  "69b89f22": {
+    "id": "69b89f22",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 74 and ema_20 > 0.17:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 57:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S29_19b823",
+    "name": "S29_69b89f",
     "explanation": "autoresearch iter 89",
     "parent_id": null
   },
-  "8bc92ecc": {
-    "id": "8bc92ecc",
+  "3a2ff6d3": {
+    "id": "3a2ff6d3",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 65 and ema_20 > 0.46:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 44:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S30_8bc92e",
+    "name": "S30_3a2ff6",
     "explanation": "autoresearch iter 90",
     "parent_id": null
   },
-  "ced7d7aa": {
-    "id": "ced7d7aa",
+  "ab3a8d0a": {
+    "id": "ab3a8d0a",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 5.53 and ema_20 > 0.98:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 61:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S31_ced7d7",
+    "name": "S31_ab3a8d",
     "explanation": "autoresearch iter 94",
     "parent_id": null
   },
-  "5dc1ab23": {
-    "id": "5dc1ab23",
+  "02d7cd89": {
+    "id": "02d7cd89",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 65 and ema_20 > 0.01:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 75:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S32_5dc1ab",
+    "name": "S32_02d7cd",
     "explanation": "autoresearch iter 96",
     "parent_id": null
   },
-  "f1b4d876": {
-    "id": "f1b4d876",
+  "c5bc9b39": {
+    "id": "c5bc9b39",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 91 and ema_20 > 0.12:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 14:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S33_f1b4d8",
+    "name": "S33_c5bc9b",
     "explanation": "autoresearch iter 97",
     "parent_id": null
   },
-  "d224f178": {
-    "id": "d224f178",
+  "27c176ab": {
+    "id": "27c176ab",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 85 and ema_20 > 0.45:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 75:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S34_d224f1",
+    "name": "S34_27c176",
     "explanation": "autoresearch iter 99",
     "parent_id": null
   },
-  "a6ecde9c": {
-    "id": "a6ecde9c",
+  "0c52bd0b": {
+    "id": "0c52bd0b",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 22 and ema_20 > 0.41:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 33:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S35_a6ecde",
+    "name": "S35_0c52bd",
     "explanation": "autoresearch iter 103",
     "parent_id": null
   },
-  "082e2486": {
-    "id": "082e2486",
+  "7b97c92e": {
+    "id": "7b97c92e",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 87 and ema_20 > 0.58:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 48:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S36_082e24",
+    "name": "S36_7b97c9",
     "explanation": "autoresearch iter 104",
     "parent_id": null
   },
-  "9b332a12": {
-    "id": "9b332a12",
+  "3e3f1be4": {
+    "id": "3e3f1be4",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 34 and ema_20 > 0.68:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 41:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S37_9b332a",
+    "name": "S37_3e3f1b",
     "explanation": "autoresearch iter 106",
     "parent_id": null
   },
-  "e6624f5c": {
-    "id": "e6624f5c",
+  "b7f7bd94": {
+    "id": "b7f7bd94",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 33 and ema_20 > 0.76:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 38:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S38_e6624f",
+    "name": "S38_b7f7bd",
     "explanation": "autoresearch iter 109",
     "parent_id": null
   },
-  "856c860a": {
-    "id": "856c860a",
+  "8440a82d": {
+    "id": "8440a82d",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 75:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 94:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S39_856c86",
+    "name": "S39_8440a8",
     "explanation": "autoresearch iter 111",
     "parent_id": null
   },
-  "e0d35b3c": {
-    "id": "e0d35b3c",
+  "87615b1b": {
+    "id": "87615b1b",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 61 and ema_20 > 0.75:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 12:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S40_e0d35b",
+    "name": "S40_87615b",
     "explanation": "autoresearch iter 113",
     "parent_id": null
   },
-  "43231a43": {
-    "id": "43231a43",
+  "178bfbd0": {
+    "id": "178bfbd0",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 90:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 38:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S41_43231a",
+    "name": "S41_178bfb",
     "explanation": "autoresearch iter 114",
     "parent_id": null
   },
-  "a934dca5": {
-    "id": "a934dca5",
+  "89737e06": {
+    "id": "89737e06",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 77:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 84:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S42_a934dc",
+    "name": "S42_89737e",
     "explanation": "autoresearch iter 115",
     "parent_id": null
   },
-  "a6096655": {
-    "id": "a6096655",
+  "8ae676ab": {
+    "id": "8ae676ab",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 34 and ema_20 > 0.85:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 82:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S43_a60966",
+    "name": "S43_8ae676",
     "explanation": "autoresearch iter 117",
     "parent_id": null
   },
-  "bc5a2792": {
-    "id": "bc5a2792",
+  "46fdc6c1": {
+    "id": "46fdc6c1",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 18:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 52:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S44_bc5a27",
+    "name": "S44_46fdc6",
     "explanation": "autoresearch iter 118",
     "parent_id": null
   },
-  "987061c6": {
-    "id": "987061c6",
+  "c021c53e": {
+    "id": "c021c53e",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 84:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S45_987061",
+    "name": "S45_c021c5",
     "explanation": "autoresearch iter 120",
     "parent_id": null
   },
-  "1378f9c2": {
-    "id": "1378f9c2",
+  "fa997719": {
+    "id": "fa997719",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 34 and ema_20 > 0.49:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 33:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S46_1378f9",
+    "name": "S46_fa9977",
     "explanation": "autoresearch iter 121",
     "parent_id": null
   },
-  "e6a63b65": {
-    "id": "e6a63b65",
+  "889f7cbb": {
+    "id": "889f7cbb",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 25 and ema_20 > 0.48:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 71:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S47_e6a63b",
+    "name": "S47_889f7c",
     "explanation": "autoresearch iter 123",
     "parent_id": null
   },
-  "6db46ffe": {
-    "id": "6db46ffe",
+  "56755c2b": {
+    "id": "56755c2b",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 47 and ema_20 > 0.53:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 43:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S48_6db46f",
+    "name": "S48_56755c",
     "explanation": "autoresearch iter 124",
     "parent_id": null
   },
-  "6f1be05d": {
-    "id": "6f1be05d",
+  "bd49c009": {
+    "id": "bd49c009",
     "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 29 and ema_20 > 0.28:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 85:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "S49_6f1be0",
+    "name": "S49_bd49c0",
     "explanation": "autoresearch iter 141",
     "parent_id": null
   }
