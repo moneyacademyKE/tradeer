@@ -7,8 +7,9 @@ def compute_rsi(data: pd.Series, period: int) -> pd.Series:
     delta = data.diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    # Handle division by zero
-    rs = gain / loss.replace(0, np.nan)
+    # abs() handles -0.0 from pandas (which .replace(0) misses). This stops
+    # spurious NaN cascades when prices barely move.
+    rs = gain / loss.abs().replace(0, np.nan)
     return 100 - (100 / (1 + rs))
 
 def calculate_signals(state: Any, history: Dict[str, List[Any]]) -> Dict[str, float]:

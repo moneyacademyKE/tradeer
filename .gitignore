@@ -5,4 +5,5 @@ data/
 .DS_Store
 performance_log.json
 strategy_pool.json
+!data/pool_stats.json
 
