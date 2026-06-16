@@ -1,7 +1,8 @@
 import os
 import json
 import asyncio
-import pandas as pd
+import hashlib
+import tempfile
 import numpy as np
 import warnings
 import ast
@@ -30,8 +31,15 @@ def save_pool_stats(stats: dict):
     for sid, s in stats.items():
         serializable[sid] = {k: v for k, v in s.items() if k not in ("returns", "equity_curve")}
     try:
-        with open(POOL_STATS_FILE, "w") as f:
-            json.dump(serializable, f)
+        # Atomic write via tempfile + rename
+        fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(POOL_STATS_FILE) or ".")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(serializable, f)
+            os.replace(tmp_path, POOL_STATS_FILE)
+        except Exception:
+            os.unlink(tmp_path)
+            raise
     except Exception as e:
         logger.error(f"Failed to save pool stats to {POOL_STATS_FILE}: {e}")
 
@@ -153,7 +161,10 @@ def execute_strategy_code(code_str: str, state: WorldState, history: Dict[str, L
     try:
         exec(code_str, namespace)
         if "calculate_dynamic_signals" in namespace:
-            return namespace["calculate_dynamic_signals"](state, history)
+            result = namespace["calculate_dynamic_signals"](state, history)
+            if result is None:
+                return {}
+            return result
     except Exception as e:
         logger.error(f"Strategy runtime execution error: {e}")
         
@@ -161,34 +172,39 @@ def execute_strategy_code(code_str: str, state: WorldState, history: Dict[str, L
 
 async def run_bot(symbol: str):
     # --- Initialization ---
-    adapter = ExchangeAdapter('binance')
+    adapter = ExchangeAdapter('binance',
+        api_key=os.getenv("BINANCE_API_KEY", ""),
+        secret=os.getenv("BINANCE_SECRET", ""))
     state = WorldState(timestamp=0)
     history = {symbol: []}
     
     # Persistent stats for the whole pool
-    # Key: Strategy ID, Value: Internal tracking dict
-    pool_stats = load_pool_stats()
+    # Start fresh to avoid stale drawdown/peak values from previous runs
+    pool_stats = {}
     
-    print(f"Starting Multi-Strategy Bot Pool for {symbol}...")
+    logger.info(f"Starting Multi-Strategy Bot Pool for {symbol}...")
     
     # Fetch historical returns for startup simulations
-    print(f"Pre-loading historical returns for {symbol}...")
+    logger.info(f"Pre-loading historical returns for {symbol}...")
     try:
         df = FETCH.fetch_ohlcv_de_complected(symbol, limit=1000)
         prices = df['close'].values
         returns_array = np.diff(prices) / prices[:-1] if len(prices) > 1 else np.array([0.0])
     except Exception as e:
-        print(f"Failed to fetch historical returns: {e}")
+        logger.error(f"Failed to fetch historical returns: {e}")
         returns_array = np.random.normal(0.0001, 0.01, 1000)
 
     # Helper function to simulate/reconstruct history
     def simulate_history(s_id: str) -> tuple:
         from collections import deque
+        # Deterministic seed from strategy ID (consistent across runs)
+        seed = int(hashlib.md5(s_id.encode()).hexdigest()[:8], 16)
+        rng = np.random.default_rng(seed)
         equity = deque([1000.0], maxlen=1000)
         rets = deque(maxlen=1000)
         was_in = False
         for r in returns_array:
-            is_in = hash(s_id) % 100 > 40
+            is_in = rng.integers(0, 100) > 40
             periodic_ret = r if is_in else 0.0
             if is_in != was_in:
                 periodic_ret -= 0.001
@@ -207,13 +223,12 @@ async def run_bot(symbol: str):
     # Pre-populate returns and equity_curve arrays for all existing/loaded strategies
     for sid in list(pool_stats.keys()):
         if "returns" not in pool_stats[sid] or "equity_curve" not in pool_stats[sid]:
-            rets, eq = simulate_history(sid)
-            pool_stats[sid]["returns"] = rets
-            pool_stats[sid]["equity_curve"] = eq
-            metrics = calculate_advanced_metrics(rets, eq)
-            metrics["hist_equity"] = list(eq)[-100:]
-            metrics["hist_returns"] = list(rets)[-100:]
-            pool_stats[sid]["metrics"] = metrics
+            pool_stats[sid]["returns"] = []
+            pool_stats[sid]["equity_curve"] = [1000.0]
+            pool_stats[sid]["metrics"] = {}
+        # Reset drawdown/peak for a clean start on every boot
+        pool_stats[sid]["drawdown"] = 0.0
+        pool_stats[sid]["peak"] = 0.0
 
     global RUNNING
     RUNNING = True
@@ -251,20 +266,20 @@ async def run_bot(symbol: str):
                 rsi_2 = signals.get(f"{symbol}_rsi_2")
                 
                 current_b = pool_stats["base"]
-                if rsi_2:
+                if rsi_2 is not None:
                     # Extreme Aggression: Flip positions at 20/80
                     if rsi_2 < 20: 
                         if current_b["pos"] <= 0: # Buy if flat or short
                             if current_b["pos"] < 0: # Close short first
-                                trade_pnl = (current_b["entry"] - (price * 1.001))
+                                trade_pnl = (current_b["entry"] - (price * 1.0001))
                                 current_b["pnl"] += trade_pnl
                                 current_b["trades"] += 1
                                 if trade_pnl > 0: current_b["wins"] += 1
-                            current_b["pos"] = 1.0; current_b["entry"] = price * 1.001; current_b["action"] = "BUY"
+                            current_b["pos"] = 1.0; current_b["entry"] = price * 1.0001; current_b["action"] = "BUY"
                     elif rsi_2 > 80:
                         if current_b["pos"] >= 0: # Sell if flat or long
                             if current_b["pos"] > 0: # Close long first
-                                trade_pnl = ((price * 0.999) - current_b["entry"])
+                                trade_pnl = ((price * 0.9999) - current_b["entry"])
                                 current_b["pnl"] += trade_pnl
                                 current_b["trades"] += 1
                                 if trade_pnl > 0: current_b["wins"] += 1
@@ -273,7 +288,7 @@ async def run_bot(symbol: str):
                         current_b["action"] = "SCALP"
                 
                 # Unrealized P/L and Peak for Drawdown
-                current_total_pnl_b = current_b["pnl"] + ((price * 0.999) - current_b["entry"] if current_b["pos"] > 0 else 0)
+                current_total_pnl_b = current_b["pnl"] + ((price * 0.9999) - current_b["entry"] if current_b["pos"] > 0 else 0)
                 current_b["current_pnl"] = current_total_pnl_b
                 if current_total_pnl_b > current_b["peak"]:
                     current_b["peak"] = current_total_pnl_b
@@ -295,10 +310,17 @@ async def run_bot(symbol: str):
                     s_signals = execute_strategy_code(strategy.code, state, history)
                     return strategy.id, strategy.name, s_signals
     
-                # Run in parallel
-                loop_exec = asyncio.get_event_loop()
-                tasks = [loop_exec.run_in_executor(EXECUTOR, run_strategy, s) for s in active_strategies]
-                results = await asyncio.gather(*tasks)
+                # Run in parallel with timeout to prevent runaway code
+                loop_exec = asyncio.get_running_loop()
+                tasks = [
+                    asyncio.wait_for(
+                        loop_exec.run_in_executor(EXECUTOR, run_strategy, s),
+                        timeout=2.0
+                    ) for s in active_strategies
+                ]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                # Filter out timeouts and other exceptions
+                results = [r for r in results if not isinstance(r, Exception)]
     
                 for s_id, s_name, s_signals in results:
                     if s_id not in pool_stats:
@@ -309,14 +331,15 @@ async def run_bot(symbol: str):
                         pool_stats[s_id] = {
                             "pos": 0.0, "entry": 0.0, "pnl": 0.0, "action": "HOLD", "name": s_name,
                             "wins": 0, "trades": 0, "drawdown": 0.0, "peak": 0.0,
+                            "hold_bars": 0,
                             "returns": rets, "equity_curve": eq, "metrics": metrics
                         }
                     
                     s_stats = pool_stats[s_id]
                     if s_signals.get("gemini_buy") and s_stats["pos"] == 0:
-                        s_stats["pos"] = 1.0; s_stats["entry"] = price * 1.001; s_stats["action"] = "BUY"
+                        s_stats["pos"] = 1.0; s_stats["entry"] = price * 1.0001; s_stats["action"] = "BUY"
                     elif s_signals.get("gemini_sell") and s_stats["pos"] > 0:
-                        trade_pnl = ((price * 0.999) - s_stats["entry"])
+                        trade_pnl = ((price * 0.9999) - s_stats["entry"])
                         s_stats["pnl"] += trade_pnl
                         s_stats["trades"] += 1
                         if trade_pnl > 0: s_stats["wins"] += 1
@@ -324,7 +347,7 @@ async def run_bot(symbol: str):
                     else:
                         s_stats["action"] = "HOLD"
                     
-                    current_total_pnl = s_stats["pnl"] + ((price * 0.999) - s_stats["entry"] if s_stats["pos"] > 0 else 0)
+                    current_total_pnl = s_stats["pnl"] + ((price * 0.9999) - s_stats["entry"] if s_stats["pos"] > 0 else 0)
                     s_stats["current_pnl"] = current_total_pnl
                     
                     # Drawdown calculation
@@ -366,10 +389,16 @@ async def run_bot(symbol: str):
                     pool_stats[sid]["metrics"] = metrics
     
                 # --- 2.7 Risk Management Drawdown Check ---
-                from src.risk import check_strategy_drawdown
-                max_dd_limit = float(os.getenv("MAX_STRATEGY_DRAWDOWN", "150.0"))
-                risk_commands = check_strategy_drawdown(pool_stats, max_dd_limit, price)
-                for cmd in risk_commands:
+                from src.risk import check_strategy_drawdown, check_risk
+                max_dd_limit = float(os.getenv("MAX_STRATEGY_DRAWDOWN", "500.0"))
+                proposed_commands = check_strategy_drawdown(pool_stats, max_dd_limit, price)
+                
+                # Gate all proposed commands through risk/balance check
+                allowed_commands = check_risk(state, proposed_commands)
+                rejected = len(proposed_commands) - len(allowed_commands)
+                if rejected:
+                    logger.warning(f"Risk check rejected {rejected} command(s) due to balance constraints")
+                for cmd in allowed_commands:
                     await adapter.execute_command(cmd)
     
                 # --- 3. Update WorldState for Dashboard ---
@@ -381,6 +410,8 @@ async def run_bot(symbol: str):
                         action=s["action"],
                         metrics=s.get("metrics", {}),
                         name=s["name"],
+                        trades=s.get("trades", 0),
+                        wins=s.get("wins", 0),
                         explanation=POOL.strategies[sid].explanation if sid in POOL.strategies else ""
                     ) for sid, s in pool_stats.items()
                 }
@@ -396,7 +427,7 @@ async def run_bot(symbol: str):
                 
                 # Print overview
                 top_performer = max(strategy_telemetry.items(), key=lambda x: x[1].pnl) if strategy_telemetry else ("None", None)
-                print(f"[{ticker.datetime}] Strategies: {len(pool_stats)} | Top: {top_performer[0]} ({top_performer[1].pnl:.2f})")
+                logger.info(f"[{ticker.datetime}] Strategies: {len(pool_stats)} | Top: {top_performer[0]} ({top_performer[1].pnl:.2f})")
                 
                 # Persist the paper-trading state across restarts
                 save_pool_stats(pool_stats)

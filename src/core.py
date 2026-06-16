@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 from pydantic import BaseModel, ConfigDict, Field
+from src.signals import calculate_signals
 
 # --- Values (Identity over Time) ---
 
@@ -44,6 +45,8 @@ class StrategyStats(BaseModel):
     metrics: Dict[str, Any] = Field(default_factory=dict)
     explanation: str = ""
     name: str = ""
+    trades: int = 0
+    wins: int = 0
 
 class WorldState(BaseModel):
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
@@ -101,7 +104,6 @@ def next_state(
 
     # 3. Derive new signals (Pure calculation)
     # This keeps the 'process' of calculation separate from the 'data'
-    from src.signals import calculate_signals
     # We pass a snapshot of the tickers to calculate_signals
     new_signals = calculate_signals(state, new_tickers)
     

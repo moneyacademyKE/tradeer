@@ -1,11 +1,32 @@
 import json
 import os
 import uuid
+import tempfile
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("tradeer")
 STRATEGY_POOL_FILE = "strategy_pool.json"
+
+def _validate_code(code: str) -> bool:
+    """Basic structural validation: must be non-empty, must contain the expected function."""
+    if not code or not isinstance(code, str):
+        return False
+    if "def calculate_dynamic_signals" not in code:
+        return False
+    return True
+
+def _validate_name(name: str) -> str:
+    """Sanitize name: max 100 chars, strip dangerous chars."""
+    if not name or not isinstance(name, str):
+        return "Unnamed Strategy"
+    return name.strip()[:100]
+
+def _validate_explanation(explanation: str) -> str:
+    """Sanitize explanation: max 500 chars."""
+    if not explanation or not isinstance(explanation, str):
+        return ""
+    return explanation.strip()[:500]
 
 class StrategyMetadata:
     def __init__(self, id: str, code: str, name: str, explanation: str = "", parent_id: str = None):
@@ -20,9 +41,18 @@ class StrategyPool:
         self.strategies: Dict[str, StrategyMetadata] = {}
         self.load()
 
-    def add_strategy(self, code: str, name: str, explanation: str = "", parent_id: str = None) -> str:
+    def add_strategy(self, code: str, name: str, explanation: str = "", parent_id: str = None) -> Optional[str]:
+        if not _validate_code(code):
+            logger.warning("Strategy pool rejected invalid code (missing calculate_dynamic_signals)")
+            return None
+        
+        sanitized_name = _validate_name(name)
+        sanitized_explanation = _validate_explanation(explanation)
+        
         strategy_id = str(uuid.uuid4())[:8]
-        self.strategies[strategy_id] = StrategyMetadata(strategy_id, code, name, explanation, parent_id)
+        self.strategies[strategy_id] = StrategyMetadata(
+            strategy_id, code, sanitized_name, sanitized_explanation, parent_id
+        )
         self.save()
         return strategy_id
 
@@ -44,8 +74,15 @@ class StrategyPool:
                 "parent_id": s.parent_id
             } for s_id, s in self.strategies.items()
         }
-        with open(STRATEGY_POOL_FILE, "w") as f:
-            json.dump(data, f, indent=2)
+        # Atomic write via tempfile + rename
+        fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(STRATEGY_POOL_FILE) or ".")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, STRATEGY_POOL_FILE)
+        except Exception:
+            os.unlink(tmp_path)
+            raise
 
     def load(self):
         if os.path.exists(STRATEGY_POOL_FILE):

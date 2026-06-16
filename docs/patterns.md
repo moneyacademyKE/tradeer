@@ -49,6 +49,16 @@
 ## Network-Layer Access Isolation
 - **Pattern**: Avoid coding credentials or auth middleware checks directly inside application routes for local-first utility tools. Instead, de-complect the application from access policies by binding API sockets strictly to local loopback addresses (`127.0.0.1`) and leaving the route logic simple. If external access is required, deploy a reverse proxy gateway to terminate authentication.
 
+## Atomic I/O Write-Replace
+- **Pattern**: When persisting state snapshots concurrently, perform file write operations inside a temporary file within the target folder, close the file descriptor, and swap the file using an atomic replace (`os.replace` or similar system-level operation). This isolates write-in-progress modifications from external readers.
+
+## Dynamic Credentials integration (Test Auth Injection)
+- **Pattern**: In scripts that interact with security-gated APIs, read and parse the project's local configurations (`.env`) using regular expression or string-split mapping. Base64-encode the credentials and attach them as a headers mapping to REST request functions, restoring automated testing continuity.
+
+## Runtime Attribute Access Interceptor
+- **Pattern**: Couple compile-time safety (AST validations) with runtime guards. Inject safe custom wrappers (`getattr` / `hasattr`) into the restricted globals of a sandbox compiler environment to catch and raise `AttributeError` for private properties or dunder attributes at run-time.
+
+
 
 
 

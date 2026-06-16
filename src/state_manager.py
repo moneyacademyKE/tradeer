@@ -1,6 +1,9 @@
 import threading
 from typing import Any, Callable, Dict
 from src.core import WorldState
+import logging
+
+logger = logging.getLogger("tradeer")
 
 # The "Atom" - identity container for an immutable value
 class StateAtom:
@@ -32,7 +35,7 @@ class StateAtom:
             try:
                 f(key, old_value, new_value)
             except Exception as e:
-                print(f"Atom Watcher Error on key '{key}': {e}")
+                logger.error(f"Atom Watcher Error on key '{key}': {e}")
 
     def swap(self, f: Callable[[WorldState, Any], WorldState], *args, **kwargs) -> WorldState:
         """

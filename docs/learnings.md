@@ -80,6 +80,19 @@
 - **Problem**: Restricting Python `__builtins__` in dynamic strategy executions to a safe subset causes runtime errors (e.g., `NameError: name 'reversed' is not defined` or `isinstance is not defined`) when mutated evolutionary strategies utilize standard built-in functions.
 - **Solution**: Add safe, non-exploitable built-ins (`isinstance`, `reversed`, `sorted`) to the execution environment's `safe_builtins` dictionary to allow robust mathematical and list manipulations without sacrificing security boundaries.
 
+## Atomic State Persistence (Tempfile Swap Pattern)
+- **Problem**: Direct file write operations on state logs (e.g., `pool_stats.json` or `strategy_pool.json`) are vulnerable to partial writes or concurrency corruption if a process crashes mid-operation.
+- **Solution**: Implement atomic writes using `tempfile.mkstemp` and `os.replace`. Write the complete data structure to a temporary file in the same directory, then execute a filesystem-level atomic rename to overwrite the target file. This guarantees that client processes read either the fully updated file or the previous state, preventing dirty reads and file corruption.
+
+## Gated Integration Testing (Babashka Auth Header Injection)
+- **Problem**: Enforcing Basic Auth in route handlers blocks anonymous integration testing runners. If a security boundary is introduced, test suites that inspect the system state fail unless they coordinate credentials.
+- **Solution**: Build an environment parser inside Clojure/Babashka scripts to load `.env` key-value pairs, parse variables (`DASHBOARD_USERNAME`/`DASHBOARD_PASSWORD`), and generate a Base64-encoded `Basic` Authorization header dynamically. This preserves route-level security while keeping the testing workflow automated and decoupled.
+
+## Dynamic Execution Safety and Override Filters
+- **Problem**: Static AST validation blocks access to dunder attributes at compile-time, but dynamic attribute access inside Python `exec()` blocks could theoretically bypass this at runtime.
+- **Solution**: Override dynamic property inspections with restricted wrappers (`safe_getattr`, `safe_hasattr`) and pass them into the execution namespace as built-ins, raising `AttributeError` for any identifier starting with a double-underscore (`__`).
+
+
 
 
 

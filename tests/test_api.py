@@ -4,16 +4,24 @@ from src.api import app
 
 client = TestClient(app)
 
-def test_api_endpoints_accessible_without_auth():
-    # Attempting to fetch state without auth should succeed with 200
+def test_api_endpoints_require_auth():
+    # Without auth, all /api/ endpoints should return 401
     response = client.get("/api/state")
-    assert response.status_code == 200
+    assert response.status_code == 401
 
-    # Attempting to fetch signals without auth should succeed with 200
     response = client.get("/api/signals")
-    assert response.status_code == 200
+    assert response.status_code == 401
 
-    # Attempting to fetch strategy details without auth should succeed with 200
     response = client.get("/api/strategy/base")
+    assert response.status_code == 401
+
+def test_api_endpoints_accessible_with_auth():
+    headers = {"Authorization": "Basic YWRtaW46YWRtaW4="}  # admin:admin
+    response = client.get("/api/state", headers=headers)
     assert response.status_code == 200
 
+    response = client.get("/api/signals", headers=headers)
+    assert response.status_code == 200
+
+    response = client.get("/api/strategy/base", headers=headers)
+    assert response.status_code == 200

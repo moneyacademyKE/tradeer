@@ -4,6 +4,9 @@ import io
 import os
 import requests
 from typing import Optional
+import logging
+
+logger = logging.getLogger("tradeer")
 
 class DataFetcher:
     """
@@ -24,14 +27,14 @@ class DataFetcher:
         
         # 1. Try Local Cache
         if os.path.exists(cache_file):
-            print(f"Loading {symbol} from de-complected local cache...")
+            logger.info(f"Loading {symbol} from de-complected local cache...")
             return pd.read_csv(cache_file)
             
         # 2. Try Public Static Solution (Binance Vision or Yahoo Finance scraper-shim)
         # For simplicity in this env, we'll implement a robust 'Direct Scrape' for Yahoo 
         # which provides high-fidelity CSVs without API keys.
         try:
-            print(f"Fetching {symbol} from public static repository (Yahoo Finance CSV)...")
+            logger.info(f"Fetching {symbol} from public static repository (Yahoo Finance CSV)...")
             # Yahoo URL for BTC-USD (no-key needed)
             url = f"https://query1.finance.yahoo.com/v7/finance/download/{base_symbol.replace('USDT', '-USD')}?period1=0&period2=9999999999&interval=1d&events=history"
             headers = {'User-Agent': 'Mozilla/5.0'}
@@ -43,10 +46,10 @@ class DataFetcher:
                 df.to_csv(cache_file, index=False)
                 return df.tail(limit)
         except Exception as e:
-            print(f"Static Fetch Failed: {e}")
+            logger.warning(f"Static Fetch Failed: {e}")
 
         # 3. Ultimate Fallback: Rich Synthetic Market DNA (Brownian Motion)
-        print("Using High-Fidelity Synthetic DNA for de-complected research...")
+        logger.info("Using High-Fidelity Synthetic DNA for de-complected research...")
         steps = limit
         returns = np.random.normal(0.0001, 0.01, steps)
         price_curve = 85000 * np.exp(np.cumsum(returns))

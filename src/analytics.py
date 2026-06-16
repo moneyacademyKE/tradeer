@@ -16,8 +16,6 @@ def calculate_advanced_metrics(returns: List[float], equity_curve: List[float]) 
     
     # 1. Return Metrics
     total_return = (eq.iloc[-1] / eq.iloc[0] - 1) if len(eq) > 0 else 0
-    cagr = total_return # Simplification for shorter backtests, normally annualized
-    cum_returns = (1 + rets).cumprod() - 1
     
     win_rets = rets[rets > 0]
     loss_rets = rets[rets < 0]
@@ -85,10 +83,6 @@ def calculate_advanced_metrics(returns: List[float], equity_curve: List[float]) 
         "Common Sense Ratio": profit_factor * abs(rets.quantile(0.95) / rets.quantile(0.05)) if rets.quantile(0.05) != 0 else 0,
     }
     
-    # Generate additional 25+ metrics by expanding variations
-    for i in range(1, 27):
-        metrics[f"Metric_{i}_Placeholder"] = 0.0 # Will fill with real calcs as we integrate
-        
     # Sanitize for JSON (replace NaN/Inf with 0.0)
     sanitized = {}
     for k, v in metrics.items():

@@ -39,6 +39,8 @@ def check_strategy_drawdown(pool_stats: dict, max_dd_limit: float, price: float)
     commands: List[Command] = []
     
     for sid, s_stats in list(pool_stats.items()):
+        if s_stats.get("action") == "BREACHED":
+            continue
         if s_stats.get("drawdown", 0.0) > max_dd_limit:
             logger.warning(f"Strategy {sid} ({s_stats.get('name', sid)}) breached max drawdown: {s_stats['drawdown']:.2f} > {max_dd_limit:.2f}. Forcing exit.")
             

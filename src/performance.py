@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 from datetime import datetime
 
 import logging
@@ -35,5 +36,12 @@ def log_performance(timestamp: float, pnl: float, rsi: float, last_price: float)
     if len(logs) > 1000:
         logs = logs[-1000:]
         
-    with open(PERFORMANCE_LOG_PATH, "w") as f:
-        json.dump(logs, f, indent=2)
+    # Atomic write via tempfile + rename
+    fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(PERFORMANCE_LOG_PATH) or ".")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(logs, f, indent=2)
+        os.replace(tmp_path, PERFORMANCE_LOG_PATH)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
