@@ -76,6 +76,11 @@
 - **Problem**: Embedding HTTP Basic Authentication checks directly into endpoint routes complects business data access with identity management policy. This makes testing tedious (requiring credentials mocking) and local execution restrictive for offline validation tools.
 - **Solution**: Decouple security policy from route logic. Remove route-level credentials dependencies and delegate network-level security to loopback bindings (e.g. binding exclusively to `127.0.0.1`) or reverse proxies. This enforces the "Economy of Mechanism" principle, leaving route handlers simple and easily testable.
 
+## Sandboxed Runtime Builtins Completeness
+- **Problem**: Restricting Python `__builtins__` in dynamic strategy executions to a safe subset causes runtime errors (e.g., `NameError: name 'reversed' is not defined` or `isinstance is not defined`) when mutated evolutionary strategies utilize standard built-in functions.
+- **Solution**: Add safe, non-exploitable built-ins (`isinstance`, `reversed`, `sorted`) to the execution environment's `safe_builtins` dictionary to allow robust mathematical and list manipulations without sacrificing security boundaries.
+
+
 
 
 
