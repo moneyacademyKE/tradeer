@@ -26,7 +26,7 @@ from src.analytics import calculate_advanced_metrics
 
 STATS_FILE = "data/pool_stats.json"
 POOL_FILE = "strategy_pool.json"
-TARGET_PNL = 200.0
+TARGET_PNL = 400.0
 DEFAULT_POOL_SIZE = 50
 
 
