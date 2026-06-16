@@ -58,8 +58,6 @@
 ## Runtime Attribute Access Interceptor
 - **Pattern**: Couple compile-time safety (AST validations) with runtime guards. Inject safe custom wrappers (`getattr` / `hasattr`) into the restricted globals of a sandbox compiler environment to catch and raise `AttributeError` for private properties or dunder attributes at run-time.
 
-
-
-
-
+## Transient Recovery on Startup (Deterministic Simulation)
+- **Pattern**: When restoring states from persistent files where large dynamic arrays are pruned, do not attempt to write complex database migrations or save heavy time-series logs. Instead, use a deterministic seed (derived from the persistent entity ID) and a pure simulation function of historical returns to dynamically reconstruct the curves on startup, keeping files lightweight and recovery instant.
 

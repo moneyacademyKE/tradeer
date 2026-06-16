@@ -92,8 +92,7 @@
 - **Problem**: Static AST validation blocks access to dunder attributes at compile-time, but dynamic attribute access inside Python `exec()` blocks could theoretically bypass this at runtime.
 - **Solution**: Override dynamic property inspections with restricted wrappers (`safe_getattr`, `safe_hasattr`) and pass them into the execution namespace as built-ins, raising `AttributeError` for any identifier starting with a double-underscore (`__`).
 
-
-
-
-
+## Transient State Reconstruction on Boot
+- **Problem**: Storing large, high-frequency arrays (like `returns` or `equity_curve`) in the configuration state causes excessive disk I/O, potential file write locks, and exponential JSON growth.
+- **Solution**: Exclude heavy lists from JSON serialization (`save_pool_stats`) and instead reconstruct them deterministically on boot via a pure simulation function (`simulate_history(sid)`). This separates config storage from log stream storage, maintaining high boot performance and complete continuity of strategy performance analytics.
 

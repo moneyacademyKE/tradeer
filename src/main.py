@@ -207,13 +207,6 @@ async def run_bot(symbol: str):
     state = WorldState(timestamp=0)
     history = {symbol: []}
     
-    # Persistent stats for the whole pool
-    # Start fresh to avoid stale drawdown/peak values from previous runs
-    pool_stats = {}
-    transactions = load_transactions()
-    
-    logger.info(f"Starting Multi-Strategy Bot Pool for {symbol}...")
-    
     # Fetch historical returns for startup simulations
     logger.info(f"Pre-loading historical returns for {symbol}...")
     try:
@@ -243,6 +236,12 @@ async def run_bot(symbol: str):
             equity.append(float(equity[-1] * (1 + periodic_ret)))
         return rets, equity
 
+    # Persistent stats for the whole pool - load from disk to persist across sessions
+    pool_stats = load_pool_stats()
+    transactions = load_transactions()
+    
+    logger.info(f"Starting Multi-Strategy Bot Pool for {symbol}...")
+
     # Ensure "base" is initialized
     if "base" not in pool_stats:
         pool_stats["base"] = {
@@ -253,12 +252,21 @@ async def run_bot(symbol: str):
     # Pre-populate returns and equity_curve arrays for all existing/loaded strategies
     for sid in list(pool_stats.keys()):
         if "returns" not in pool_stats[sid] or "equity_curve" not in pool_stats[sid]:
-            pool_stats[sid]["returns"] = []
-            pool_stats[sid]["equity_curve"] = [1000.0]
-            pool_stats[sid]["metrics"] = {}
-        # Reset drawdown/peak for a clean start on every boot
-        pool_stats[sid]["drawdown"] = 0.0
-        pool_stats[sid]["peak"] = 0.0
+            rets, eq = simulate_history(sid)
+            pool_stats[sid]["returns"] = rets
+            pool_stats[sid]["equity_curve"] = eq
+
+        # Ensure drawdown and peak are initialized
+        pool_stats[sid]["drawdown"] = pool_stats[sid].get("drawdown", 0.0)
+        pool_stats[sid]["peak"] = pool_stats[sid].get("peak", 0.0)
+        
+        # Calculate advanced metrics so they are loaded immediately on boot
+        rets_copy = list(pool_stats[sid]["returns"])
+        eq_copy = list(pool_stats[sid]["equity_curve"])
+        metrics = calculate_advanced_metrics(rets_copy, eq_copy)
+        metrics["hist_equity"] = eq_copy[-100:]
+        metrics["hist_returns"] = rets_copy[-100:]
+        pool_stats[sid]["metrics"] = metrics
 
     global RUNNING
     RUNNING = True
