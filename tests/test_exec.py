@@ -65,3 +65,22 @@ def calculate_dynamic_signals(state, history):
     state = WorldState(timestamp=0)
     res = execute_strategy_code(unsafe_code, state, {})
     assert res == {}
+
+def test_execute_strategy_with_isinstance_reversed_sorted():
+    valid_code = """
+def calculate_dynamic_signals(state, history):
+    # Test isinstance
+    is_list = isinstance(history.get("BTC/USDT", []), list)
+    # Test reversed
+    rev_list = list(reversed([1, 2, 3]))
+    # Test sorted
+    srt_list = sorted([3, 1, 2])
+    
+    if is_list and rev_list == [3, 2, 1] and srt_list == [1, 2, 3]:
+        return {"gemini_buy": 1.0}
+    return {}
+"""
+    state = WorldState(timestamp=0)
+    res = execute_strategy_code(valid_code, state, {"BTC/USDT": []})
+    assert res == {"gemini_buy": 1.0}
+

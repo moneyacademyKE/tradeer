@@ -93,6 +93,14 @@ def safe_getattr(obj, name: str, default=None):
         raise AttributeError(f"Unsafe attribute access blocked: '{name}'")
     return getattr(obj, name, default)
 
+def safe_hasattr(obj, name: str) -> bool:
+    """
+    Custom wrapper for hasattr to block dunder attribute access at runtime.
+    """
+    if not isinstance(name, str) or name.startswith("__"):
+        return False
+    return hasattr(obj, name)
+
 def execute_strategy_code(code_str: str, state: WorldState, history: Dict[str, List[Ticker]]) -> Dict[str, float]:
     """
     Safely execute dynamic strategy code in a restricted namespace.
@@ -124,6 +132,16 @@ def execute_strategy_code(code_str: str, state: WorldState, history: Dict[str, L
         "tuple": tuple,
         "zip": zip,
         "getattr": safe_getattr,
+        "hasattr": safe_hasattr,
+        "reversed": reversed,
+        "isinstance": isinstance,
+        "sorted": sorted,
+        "TypeError": TypeError,
+        "ValueError": ValueError,
+        "AttributeError": AttributeError,
+        "KeyError": KeyError,
+        "IndexError": IndexError,
+        "Exception": Exception,
     }
     
     namespace = {

@@ -4,6 +4,7 @@ import time
 import warnings
 import logging
 import requests
+import random
 from dotenv import load_dotenv
 from src.strategy_pool import POOL
 from src.state_manager import SHARED_STATE
