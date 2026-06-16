@@ -33,5 +33,26 @@
     "name": "Fallback_Bootstrap_4",
     "explanation": "Pre-built synthetic strategy",
     "parent_id": null
+  },
+  "0b1f9afd": {
+    "id": "0b1f9afd",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_14 < 28 and rsi_2 < 35:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 72 and rsi_2 > 65:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "RSI14_RSI2_Confirmation",
+    "explanation": "Mutates the parent RSI-14 strategy by requiring RSI-2 confirmation and using tighter thresholds for buy/sell signals.",
+    "parent_id": "5faca2b5"
+  },
+  "4ab94430": {
+    "id": "4ab94430",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_14 < 32 and rsi_2 < 25 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 68 and rsi_2 > 75 and ema_20 > 0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi14_ema20_rsi2_confluence",
+    "explanation": "Mutated the parent by tightening RSI thresholds and adding RSI2 confirmation while keeping the EMA trend filter.",
+    "parent_id": "c76a16b4"
+  },
+  "6728d83e": {
+    "id": "6728d83e",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 15 and rsi_14 < 35:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 85 and rsi_14 > 65:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "RSI2_RSI14_Confluence",
+    "explanation": "Combines fast and medium RSI thresholds for stricter entry and exit signals while preserving the template structure.",
+    "parent_id": "c5247638"
   }
 }

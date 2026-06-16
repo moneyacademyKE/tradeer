@@ -420,18 +420,18 @@ h3 {
 /* Details Grid & Panels Layout */
 .details-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
     align-items: start;
 }
 
-.transaction-panel {
+.transaction-panel, .pulse-monitor {
     display: flex;
     flex-direction: column;
     min-height: 400px;
 }
 
-.transaction-container {
+.transaction-container, .pulse-grid {
     max-height: 380px;
     overflow-y: auto;
     display: flex;
@@ -440,7 +440,7 @@ h3 {
     padding-right: 0.5rem;
 }
 
-.no-transactions {
+.no-transactions, .no-signals {
     color: var(--text-secondary);
     font-size: 0.9rem;
     text-align: center;
@@ -513,7 +513,59 @@ h3 {
     color: var(--accent-blue);
 }
 
-@media (max-width: 992px) {
+/* Live Signal Pulse Panel */
+.signal-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+}
+
+.signal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.signal-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+}
+
+.signal-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.signal-gauge {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 0.25rem;
+}
+
+.gauge-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--danger), var(--accent-color), var(--success));
+    border-radius: 3px;
+    transition: width 0.5s ease-in-out;
+}
+
+@media (max-width: 1200px) {
+    .details-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
     .details-grid {
         grid-template-columns: 1fr;
     }

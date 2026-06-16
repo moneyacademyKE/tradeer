@@ -278,6 +278,49 @@
         }).join('');
     }
 
+    function renderSignalPulse(state) {
+        const container = document.getElementById('pulse-grid');
+        if (!container || !state || !state.signals) return;
+
+        const signals = Object.entries(state.signals)
+            .filter(([k, _]) => k.startsWith('BTC/USDT_')); // Filter to core indicators
+
+        if (signals.length === 0) {
+            container.innerHTML = '<div class="no-signals">No live signals computed yet.</div>';
+            return;
+        }
+
+        container.innerHTML = signals.map(([name, val]) => {
+            const cleanName = escapeHtml(name.replace('BTC/USDT_', '').toUpperCase());
+            const numericVal = parseFloat(val);
+            let displayVal = numericVal.toFixed(2);
+            let barHtml = '';
+
+            // If it's an RSI indicator, draw a gauge representing 0-100
+            if (cleanName.includes('RSI')) {
+                const fillPct = Math.min(Math.max(numericVal, 0), 100);
+                barHtml = `
+                    <div class="signal-gauge">
+                        <div class="gauge-fill" style="width: ${fillPct}%"></div>
+                    </div>
+                `;
+            } else {
+                // For price-based signals like EMA, format as currency
+                displayVal = `$${numericVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            return `
+                <div class="signal-item">
+                    <div class="signal-header">
+                        <span class="signal-name">${cleanName}</span>
+                        <span class="signal-val">${displayVal}</span>
+                    </div>
+                    ${barHtml}
+                </div>
+            `;
+        }).join('');
+    }
+
     async function updateDashboard() {
         try {
             const response = await authFetch('/api/state');
@@ -307,6 +350,7 @@
             }
             renderExperiments(state);
             renderTransactions(state);
+            renderSignalPulse(state);
         } catch (e) {
             showConnectionError("API connection offline. Retrying...");
             if (!stateSnapshot) {
