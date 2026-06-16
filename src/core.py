@@ -28,6 +28,7 @@ class Order(BaseModel):
     amount: float
     status: str  # open, closed, canceled
     timestamp: int
+    strategy_id: Optional[str] = None
 
 class Position(BaseModel):
     model_config = ConfigDict(frozen=True)

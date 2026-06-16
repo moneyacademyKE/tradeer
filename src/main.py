@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+from datetime import datetime
 import hashlib
 import tempfile
 import numpy as np
@@ -44,7 +45,7 @@ def save_pool_stats(stats: dict):
         logger.error(f"Failed to save pool stats to {POOL_STATS_FILE}: {e}")
 
 from concurrent.futures import ThreadPoolExecutor
-from src.core import WorldState, next_state, CreateOrderCommand, StrategyStats, Ticker
+from src.core import WorldState, next_state, CreateOrderCommand, StrategyStats, Ticker, Order
 from src.exchange import ExchangeAdapter
 from src.signals import calculate_signals
 from src.data_fetcher import DataFetcher
@@ -52,6 +53,34 @@ from src.state_manager import SHARED_STATE
 from src.strategy_pool import POOL
 from src.analytics import calculate_advanced_metrics
 from typing import Dict, List
+import uuid
+
+TRANSACTIONS_FILE = "data/transactions.json"
+
+def load_transactions() -> dict:
+    if os.path.exists(TRANSACTIONS_FILE):
+        try:
+            with open(TRANSACTIONS_FILE, "r") as f:
+                data = json.load(f)
+                return {oid: Order(**o) for oid, o in data.items()}
+        except Exception as e:
+            logger.error(f"Failed to load transactions from {TRANSACTIONS_FILE}: {e}")
+    return {}
+
+def save_transactions(orders: dict):
+    os.makedirs(os.path.dirname(TRANSACTIONS_FILE), exist_ok=True)
+    serializable = {oid: o.model_dump() for oid, o in orders.items()}
+    try:
+        fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(TRANSACTIONS_FILE) or ".")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(serializable, f, indent=2)
+            os.replace(tmp_path, TRANSACTIONS_FILE)
+        except Exception:
+            os.unlink(tmp_path)
+            raise
+    except Exception as e:
+        logger.error(f"Failed to save transactions to {TRANSACTIONS_FILE}: {e}")
 
 # Optimized for executing hundreds of pure functions
 EXECUTOR = ThreadPoolExecutor(max_workers=10)
@@ -181,6 +210,7 @@ async def run_bot(symbol: str):
     # Persistent stats for the whole pool
     # Start fresh to avoid stale drawdown/peak values from previous runs
     pool_stats = {}
+    transactions = load_transactions()
     
     logger.info(f"Starting Multi-Strategy Bot Pool for {symbol}...")
     
@@ -276,6 +306,18 @@ async def run_bot(symbol: str):
                                 current_b["trades"] += 1
                                 if trade_pnl > 0: current_b["wins"] += 1
                             current_b["pos"] = 1.0; current_b["entry"] = price * 1.0001; current_b["action"] = "BUY"
+                            order_id = str(uuid.uuid4())[:8]
+                            transactions[order_id] = Order(
+                                id=order_id,
+                                symbol=symbol,
+                                type="market",
+                                side="BUY",
+                                price=price * 1.0001,
+                                amount=1.0,
+                                status="closed",
+                                timestamp=int(datetime.now().timestamp() * 1000),
+                                strategy_id="base"
+                            )
                     elif rsi_2 > 80:
                         if current_b["pos"] >= 0: # Sell if flat or long
                             if current_b["pos"] > 0: # Close long first
@@ -284,6 +326,18 @@ async def run_bot(symbol: str):
                                 current_b["trades"] += 1
                                 if trade_pnl > 0: current_b["wins"] += 1
                             current_b["pos"] = 0; current_b["action"] = "SELL"
+                            order_id = str(uuid.uuid4())[:8]
+                            transactions[order_id] = Order(
+                                id=order_id,
+                                symbol=symbol,
+                                type="market",
+                                side="SELL",
+                                price=price * 0.9999,
+                                amount=1.0,
+                                status="closed",
+                                timestamp=int(datetime.now().timestamp() * 1000),
+                                strategy_id="base"
+                            )
                     else:
                         current_b["action"] = "SCALP"
                 
@@ -338,12 +392,36 @@ async def run_bot(symbol: str):
                     s_stats = pool_stats[s_id]
                     if s_signals.get("gemini_buy") and s_stats["pos"] == 0:
                         s_stats["pos"] = 1.0; s_stats["entry"] = price * 1.0001; s_stats["action"] = "BUY"
+                        order_id = str(uuid.uuid4())[:8]
+                        transactions[order_id] = Order(
+                            id=order_id,
+                            symbol=symbol,
+                            type="market",
+                            side="BUY",
+                            price=price * 1.0001,
+                            amount=1.0,
+                            status="closed",
+                            timestamp=int(datetime.now().timestamp() * 1000),
+                            strategy_id=s_id
+                        )
                     elif s_signals.get("gemini_sell") and s_stats["pos"] > 0:
                         trade_pnl = ((price * 0.9999) - s_stats["entry"])
                         s_stats["pnl"] += trade_pnl
                         s_stats["trades"] += 1
                         if trade_pnl > 0: s_stats["wins"] += 1
                         s_stats["pos"] = 0; s_stats["action"] = "SELL"
+                        order_id = str(uuid.uuid4())[:8]
+                        transactions[order_id] = Order(
+                            id=order_id,
+                            symbol=symbol,
+                            type="market",
+                            side="SELL",
+                            price=price * 0.9999,
+                            amount=1.0,
+                            status="closed",
+                            timestamp=int(datetime.now().timestamp() * 1000),
+                            strategy_id=s_id
+                        )
                     else:
                         s_stats["action"] = "HOLD"
                     
@@ -416,11 +494,18 @@ async def run_bot(symbol: str):
                     ) for sid, s in pool_stats.items()
                 }
     
+                # Prune and save transactions
+                if len(transactions) > 100:
+                    sorted_orders = sorted(transactions.values(), key=lambda o: o.timestamp)
+                    transactions = {o.id: o for o in sorted_orders[-100:]}
+                save_transactions(transactions)
+
                 state, _ = next_state(state, ticker)
                 state = state.model_copy(update={
                     'signals': signals, 
                     'strategy_stats': strategy_telemetry,
-                    'balance': {'USDT': 1000.0}
+                    'balance': {'USDT': 1000.0},
+                    'orders': transactions
                 })
                 
                 SHARED_STATE.reset(state)

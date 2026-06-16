@@ -416,3 +416,105 @@ h3 {
     .stats-bar { justify-content: center; }
     .grid { grid-template-columns: 1fr; }
 }
+
+/* Details Grid & Panels Layout */
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.transaction-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+}
+
+.transaction-container {
+    max-height: 380px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-right: 0.5rem;
+}
+
+.no-transactions {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 3rem;
+}
+
+.transaction-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.transaction-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.transaction-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.transaction-strategy {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.transaction-meta {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.transaction-price-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.transaction-side {
+    font-weight: 800;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.transaction-side.buy {
+    color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.05);
+}
+
+.transaction-side.sell {
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.05);
+}
+
+.transaction-price {
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+@media (max-width: 992px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -52,7 +52,8 @@
         priceChange: document.getElementById('price-change'),
         strategyCode: document.getElementById('strategy-code'),
         experimentList: document.getElementById('experiment-list'),
-        experimentBadge: document.getElementById('experiment-badge')
+        experimentBadge: document.getElementById('experiment-badge'),
+        transactionLog: document.getElementById('transaction-log')
     };
 
     let stateSnapshot = null;
@@ -233,6 +234,50 @@
         }
     }
 
+    function renderTransactions(state) {
+        const container = elements.transactionLog;
+        if (!container || !state || !state.orders) return;
+
+        const orders = Object.values(state.orders);
+        if (orders.length === 0) {
+            container.innerHTML = '<div class="no-transactions">No transactions logged yet.</div>';
+            return;
+        }
+
+        // Sort by timestamp descending (newest first)
+        orders.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Helper to resolve strategy name
+        function getStrategyName(sid) {
+            if (sid === 'base') return 'Base HF Scalper';
+            const stats = state.strategy_stats && state.strategy_stats[sid];
+            return stats && stats.name ? stats.name : sid;
+        }
+
+        container.innerHTML = orders.map(order => {
+            const sideClass = (order.side || '').toLowerCase() === 'buy' ? 'buy' : 'sell';
+            const escapedSide = escapeHtml(order.side);
+            const escapedSymbol = escapeHtml(order.symbol);
+            const escapedName = escapeHtml(getStrategyName(order.strategy_id));
+            const formattedPrice = (order.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const formattedAmount = (order.amount || 0).toFixed(4);
+            const dateStr = new Date(order.timestamp).toLocaleTimeString();
+
+            return `
+                <div class="transaction-row">
+                    <div class="transaction-details">
+                        <span class="transaction-strategy">${escapedName}</span>
+                        <span class="transaction-meta">${escapedSymbol} &bull; ${dateStr}</span>
+                    </div>
+                    <div class="transaction-price-info">
+                        <span class="transaction-side ${sideClass}">${escapedSide} ${formattedAmount}</span>
+                        <span class="transaction-price">$${formattedPrice}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
     async function updateDashboard() {
         try {
             const response = await authFetch('/api/state');
@@ -261,6 +306,7 @@
                 elements.balance.textContent = `$${((state.balance && state.balance['USDT']) || 0).toLocaleString()}`;
             }
             renderExperiments(state);
+            renderTransactions(state);
         } catch (e) {
             showConnectionError("API connection offline. Retrying...");
             if (!stateSnapshot) {
