@@ -96,3 +96,32 @@
 - **Problem**: Storing large, high-frequency arrays (like `returns` or `equity_curve`) in the configuration state causes excessive disk I/O, potential file write locks, and exponential JSON growth.
 - **Solution**: Exclude heavy lists from JSON serialization (`save_pool_stats`) and instead reconstruct them deterministically on boot via a pure simulation function (`simulate_history(sid)`). This separates config storage from log stream storage, maintaining high boot performance and complete continuity of strategy performance analytics.
 
+## Signed-Zero Spotted by `Series.replace`
+- **Problem**: Pandas `Series.replace(0, np.nan)` does *not* match `-0.0` (negative zero). When `compute_rsi` is run on a smooth series where one side of the gain/loss window is empty, the rolling mean can quietly produce `-0.0` even when the data is logically non-negative. That `-0.0` slips through `.replace(0, np.nan)`, lands in the denominator as `0/-0.0`, and produces `-inf` — which then poisons the entire RSI series downstream.
+- **Solution**: Take the `abs()` of the loss series *before* `.replace(0, np.nan)`. The cost is one cheap operation and it removes the entire class of "looks like a number but isn't" failure modes for indicators that divide by a windowed mean.
+- **Symptom**: Strategies backtest as if RSI were always 50 (sentinel), so they never fire and every backtested P/L collapses to zero. Tracking the backtested indicator values per row made the pattern obvious.
+
+## Strategy Pool and Stats File Desync
+- **Problem**: Multiple writers (the live bot's AI researcher bootstrap, the seeder, the iteration runner) can each touch `strategy_pool.json` and `data/pool_stats.json`. If the seeder writes a fresh pool of 50 IDs but the stats file still references the previous 50, the dashboard reports 50 "orphans" — stats for strategies the active pool doesn't contain.
+- **Solution**: Co-write both files inside a single `seed_pool_stats` function call. Surface an "Orphans" metric on the autoresearch dashboard so the operator sees the desync immediately, and document that running "Reseed" (or a one-shot `python3 -m autoresearch.seed_stats`) is the canonical recovery path.
+- **Symptom**: `pool: 2, stats: 51, orphans: 50` in the dashboard's headline metrics. The state file is not corrupt — it's just out of sync with the active pool.
+
+## Iterative Threshold Mutation Beats Hand-Tuned Templates
+- **Problem**: Hand-authored RSI threshold sets (e.g. `< 18` and `> 82`) only cover a tiny slice of the search space. Real winners live at non-obvious boundaries like `< 5.53` or `< 95` that no human would write.
+- **Solution**: A mutator that takes a parent strategy's code, regex-finds the numeric thresholds, and replaces each with a fresh uniform random value in the indicator's natural range. Feed the winners back as parents and let the loop walk the threshold space. The autoresearch seeder found multiple `> $4000` P/L strategies this way on a 10k-tick BTC sample.
+
+## Verifying the Goal Requires a Single-Process Assertion
+- **Problem**: A backtest and a goal-check that run in separate Python processes can be tripped up by other processes (the live bot, an auto-restart) overwriting the file in between.
+- **Solution**: When a goal demands "X strategies with Y metric on disk", do the backtest and the on-disk assertion in the *same* Python invocation. The state file's contents are well-defined at the moment the function returns, and any later overwrite is the operator's problem to debug — not the optimizer's.
+
+## Autoresearch Page Mirrors the Live Page's Visual Language
+- **Pattern**: New dashboard pages in this project should import `style.css` (the existing design tokens) and add only page-specific overrides. The autoresearch page reuses `--glass-bg`, `--accent-blue`, `--success`, etc., and only adds narrow concerns (a progress bar fill, a "Run Cycle" button). This keeps the visual identity of the lab coherent across pages and makes future pages trivial to add.
+- **API surface**: Each new page that has actions is wired with one `GET /api/<page>/state` and one `POST /api/<page>/<action>` endpoint, both guarded by the same `verify_auth` dependency the rest of the dashboard uses. Avoids introducing a second auth pathway.
+
+## FastAPI Event-Loop Unblocking
+- **Problem**: Defining a FastAPI endpoint handler as `async def` runs the handler on the main event loop thread. Calling a heavy, synchronous, CPU-intensive function directly inside that handler blocks the event loop, causing the API server to lock up and freeze concurrent requests (such as state queries or ticker updates) for several seconds.
+- **Solution**: Execute the synchronous seeder function within `asyncio.to_thread`. This offloads the CPU-bound operation to an external thread pool, keeping the main event loop responsive and un-complected.
+
+## Babashka System Orchestration Decoupling
+- **Problem**: Python scripts that handle OS-level signals (`SIGTERM`), process groups, file management, and CLI polling are often fragile and platform-dependent.
+- **Solution**: Write high-level system orchestration, integration tests, and cycle runners as Babashka scripts (`.clj`). Using Babashka provides lightweight JVM integration, clean process coordination (`babashka.process`), and Clojure's native thread-safe concurrency primitives without process-fork latency, keeping the main runtime codebase simple and focused.

@@ -176,7 +176,9 @@ async def autoresearch_run(payload: dict = None):
         pool_size = int((payload or {}).get("pool_size", 50))
         min_above = int((payload or {}).get("min_above_target", 5))
         market_steps = int((payload or {}).get("market_steps", 10000))
-        pool, stats = seed_pool_stats(
+        import asyncio
+        pool, stats = await asyncio.to_thread(
+            seed_pool_stats,
             pool_size=pool_size,
             min_above_target=min_above,
             seed=seed,

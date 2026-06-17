@@ -61,3 +61,25 @@
 ## Transient Recovery on Startup (Deterministic Simulation)
 - **Pattern**: When restoring states from persistent files where large dynamic arrays are pruned, do not attempt to write complex database migrations or save heavy time-series logs. Instead, use a deterministic seed (derived from the persistent entity ID) and a pure simulation function of historical returns to dynamically reconstruct the curves on startup, keeping files lightweight and recovery instant.
 
+## Autoresearch Keep/Discard Loop
+- **Pattern**: Treat strategy evolution as an *outer* optimization over the *inner* trading simulation. Define a measurable objective (e.g. "at least N strategies with P/L > T dollars"), backtest every candidate against the same deterministic market, sort by objective value, prune the bottom half, spawn mutations of the top performers, and repeat. The objective is the same number the dashboard surfaces, so the harness and the UI share one source of truth.
+- **Benefit**: The optimizer is decoupled from the live bot. The harness can iterate in seconds against historical data without waiting for the slow real-time loop to discover winners, while the live bot continues to use whichever pool the harness last persisted.
+- **Application**: The Karpathy autoresearch pattern applied to trading — mutate a parent's numeric thresholds, compile under the same AST sandbox the live bot uses, score on a fixed Binance 1-min CSV, keep/discard based on the persisted `current_pnl`.
+
+## Backtest Mirrors Live Buy/Sell Semantics
+- **Pattern**: When scoring candidate code, replay the *exact* buy/sell rules from the live runtime (entry at `bid * 1.0001`, exit at `bid * 0.9999`, position size 1.0, mark-to-market on `close`, drawdown breach at the env-configured limit) rather than a parallel, simpler model. A strategy that wins the backtest must make the same trade on the live bot or the loop is misleading.
+- **Benefit**: A passing backtest is a sufficient (not just necessary) condition for a strategy to be a winner. The optimizer and the runtime are de-complected but refer to the same equation.
+
+## Shared `TARGET_PNL` Constant for Optimizer and UI
+- **Pattern**: The autoresearch target threshold lives in one module (`autoresearch/seed_stats.TARGET_PNL`). The API endpoint that powers the dashboard imports the same constant, so the "above target" badge on the page is byte-for-byte the same filter the seeder applies.
+- **Benefit**: Raising the bar is a one-line edit; the UI updates without redeploy, and the operator can never get a "12 strategies above target" page that disagrees with the next seeder run.
+
+## Atomic Pool + Stats Co-Write
+- **Pattern**: When persisting the optimized pool and its corresponding `pool_stats.json`, write both files inside the same Python function using `tempfile.mkstemp` + `os.replace` per file. A reader can still see a brief window where the new pool is on disk but the old stats are, but the inverse (new stats, old pool) is impossible because the stats file is only meaningful when its strategy IDs are present in the pool.
+- **Benefit**: Avoids the orphan-state failure mode where `pool_stats.json` references strategy IDs that no longer exist in `strategy_pool.json`. The dashboard can detect orphans and surface a warning, but a single seeder call never produces them.
+
+## Event-Loop Unblocking
+- **Pattern**: When introducing long-running or CPU-intensive operations inside FastAPI async routes, always execute them inside a worker thread via `asyncio.to_thread` or declare the router path using a standard synchronous `def` handler (which FastAPI executes inside its external thread pool). This preserves the single-threaded event loop's responsiveness for concurrent network I/O.
+
+## Babashka Orchestration Pipeline
+- **Pattern**: For multi-paradigm applications requiring OS process management, REST verification, and data assertions, write orchestration workflows as Babashka scripts (`.clj`). Utilize Clojure's native thread-safe concurrency models, HTTP client packages, and clean process control wrappers to coordinate external actions and verify system health without adding overhead or signal handling complications to the main runtime application.

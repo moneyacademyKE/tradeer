@@ -90,3 +90,17 @@ Run the automated test suite:
 ```bash
 python3 -m pytest
 ```
+
+## 🧬 Autoresearch Module
+
+The `autoresearch/` package implements the keep/discard loop:
+
+| File | Role |
+|------|------|
+| `autoresearch/simulator.py` | Deterministic replay of the live bot's buy/sell logic against real Binance 1-min data, pre-compiling strategies once per run for throughput. |
+| `autoresearch/mutator.py` | Generates strategy templates (`rsi_2 < N` / `rsi_14 < M` / `ema_20 > 0`) and mutates parent code via threshold tweaks and conjunction rewrites. |
+| `autoresearch/seed_stats.py` | Backtests candidates, persists the best pool atomically, and exposes `TARGET_PNL` (read live by the API). |
+| `autoresearch/iteration.py` | Spawns the live bot as a subprocess for a fixed duration, evaluates `data/pool_stats.json`, and reseeds if the goal is unmet. |
+| `autoresearch/__init__.py` | Package marker. |
+
+The same sandbox and buy/sell semantics that `src/main.py` enforces are mirrored in the simulator, so a strategy that wins in the seeder is guaranteed to make the same trades when the live bot runs it.
