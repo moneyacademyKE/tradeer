@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import uuid
 import tempfile
 import logging
@@ -39,42 +40,47 @@ class StrategyMetadata:
 class StrategyPool:
     def __init__(self):
         self.strategies: Dict[str, StrategyMetadata] = {}
+        self._lock = threading.Lock()
         self.load()
 
     def add_strategy(self, code: str, name: str, explanation: str = "", parent_id: str = None) -> Optional[str]:
         if not _validate_code(code):
             logger.warning("Strategy pool rejected invalid code (missing calculate_dynamic_signals)")
             return None
-        
+
         sanitized_name = _validate_name(name)
         sanitized_explanation = _validate_explanation(explanation)
-        
+
         strategy_id = str(uuid.uuid4())[:8]
-        self.strategies[strategy_id] = StrategyMetadata(
-            strategy_id, code, sanitized_name, sanitized_explanation, parent_id
-        )
+        with self._lock:
+            self.strategies[strategy_id] = StrategyMetadata(
+                strategy_id, code, sanitized_name, sanitized_explanation, parent_id
+            )
         self.save()
         return strategy_id
 
     def remove_strategy(self, strategy_id: str):
-        if strategy_id in self.strategies:
-            del self.strategies[strategy_id]
-            self.save()
+        with self._lock:
+            if strategy_id in self.strategies:
+                del self.strategies[strategy_id]
+        self.save()
 
     def get_all(self) -> List[StrategyMetadata]:
-        return list(self.strategies.values())
+        with self._lock:
+            return list(self.strategies.values())
 
     def save(self):
-        data = {
-            s_id: {
-                "id": s.id,
-                "code": s.code,
-                "name": s.name,
-                "explanation": s.explanation,
-                "parent_id": s.parent_id
-            } for s_id, s in self.strategies.items()
-        }
-        # Atomic write via tempfile + rename
+        with self._lock:
+            data = {
+                s_id: {
+                    "id": s.id,
+                    "code": s.code,
+                    "name": s.name,
+                    "explanation": s.explanation,
+                    "parent_id": s.parent_id
+                } for s_id, s in self.strategies.items()
+            }
+        # Atomic write via tempfile + rename (outside the lock to avoid I/O under lock)
         fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(STRATEGY_POOL_FILE) or ".")
         try:
             with os.fdopen(fd, "w") as f:
@@ -89,13 +95,15 @@ class StrategyPool:
             try:
                 with open(STRATEGY_POOL_FILE, "r") as f:
                     data = json.load(f)
-                    for s_id, s in data.items():
-                        self.strategies[s_id] = StrategyMetadata(
-                            s["id"], s["code"], s["name"], s.get("explanation", ""), s.get("parent_id")
-                        )
+                    with self._lock:
+                        for s_id, s in data.items():
+                            self.strategies[s_id] = StrategyMetadata(
+                                s["id"], s["code"], s["name"], s.get("explanation", ""), s.get("parent_id")
+                            )
             except Exception as e:
                 logger.error(f"Failed to load strategy pool from {STRATEGY_POOL_FILE}: {e}")
-                self.strategies = {}
+                with self._lock:
+                    self.strategies = {}
 
 # Singleton instance
 POOL = StrategyPool()

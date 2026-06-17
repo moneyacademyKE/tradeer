@@ -125,3 +125,23 @@
 ## Babashka System Orchestration Decoupling
 - **Problem**: Python scripts that handle OS-level signals (`SIGTERM`), process groups, file management, and CLI polling are often fragile and platform-dependent.
 - **Solution**: Write high-level system orchestration, integration tests, and cycle runners as Babashka scripts (`.clj`). Using Babashka provides lightweight JVM integration, clean process coordination (`babashka.process`), and Clojure's native thread-safe concurrency primitives without process-fork latency, keeping the main runtime codebase simple and focused.
+
+## TARGET_PNL Divergence Across Modules (Single Source of Truth)
+- **Problem**: `autoresearch/iteration.py` hard-coded `TARGET_PNL = 200.0` while `autoresearch/seed_stats.py` used `TARGET_PNL = 2000.0`. The iteration runner measured "goal reached" against 10× less than the seeder and dashboard, making it impossible for the operator to reason about progress.
+- **Solution**: `from autoresearch.seed_stats import TARGET_PNL` in every module that needs this threshold. A `try/except ImportError` fallback to 2000.0 keeps the module importable standalone. Documented in patterns.md as the Shared Constant pattern.
+
+## Late Imports Causing NameError in Production Code
+- **Problem**: `autoresearch/iteration.py` used `tempfile.mkstemp` and `uuid.uuid4()` inside function bodies defined *before* the `import tempfile` and `import uuid` statements at the module level. Python functions close over module-level names at *call* time, not definition time, so the NameError only surfaces at runtime during the first invocation of `save_pool()`.
+- **Solution**: Always place stdlib imports at the top of the file. Audit new modules for mid-file imports by scanning for `^import` lines below any function definition.
+
+## StrategyPool Concurrent Access Race Condition
+- **Problem**: `src/researcher.py` runs inside `asyncio.to_thread`, meaning it executes on a separate OS thread. `src/main.run_bot` is an asyncio coroutine that also calls `POOL.get_all()`, `POOL.remove_strategy()`, and `POOL.save()`. The `StrategyPool.strategies` dict was unprotected — two threads could simultaneously modify it.
+- **Solution**: Add `threading.Lock` to `StrategyPool`. Acquire the lock for any read or write to `self.strategies`. Crucially, release the lock *before* the atomic file write so I/O doesn't hold the lock across a slow syscall.
+
+## Dead Code That Masks Intent (Reassigned Variables)
+- **Problem**: `seed_stats.py` had `fd, tmp = os.path.dirname(pool_file) or ".", None` immediately followed by `fd, tmp = tempfile.mkstemp(dir=".")`. The first assignment assigned a *string* to `fd` and `None` to `tmp`. The subsequent conditional `if tmp is not None` was therefore always `False`. This masked the developer's intent to create the pool directory if missing.
+- **Solution**: Delete the dead lines. The string `fd` would cause an error if the mkstemp line were ever removed, creating a time-bomb in the codebase. Dead code that shadows names should be treated as a critical bug risk.
+
+## Non-Atomic Stats File Write Creating Orphan Window
+- **Problem**: `seed_stats.py` wrote `strategy_pool.json` atomically (tempfile+rename) but wrote `pool_stats.json` with a plain `open(stats_file, "w")`. If the process was interrupted between the two writes, the pool was fresh but the stats were corrupt — producing orphan dashboard warnings.
+- **Solution**: Apply the same `tempfile.mkstemp` + `os.replace` pattern to the stats file write. Both files now either succeed together or the old versions remain intact.

@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 logger = logging.getLogger("tradeer")
 
 POOL_STATS_FILE = "data/pool_stats.json"
+RUNNING = False
 
 def load_pool_stats() -> dict:
     if os.path.exists(POOL_STATS_FILE):
@@ -294,7 +295,7 @@ async def run_bot(symbol: str):
                     await asyncio.sleep(2)
                     continue
                 history[symbol].append(ticker)
-                if len(history[symbol]) > 100: history[symbol].pop(0)
+                if len(history[symbol]) > 100: history[symbol] = history[symbol][-100:]
                 
                 price = ticker.bid
                 

@@ -83,3 +83,16 @@
 
 ## Babashka Orchestration Pipeline
 - **Pattern**: For multi-paradigm applications requiring OS process management, REST verification, and data assertions, write orchestration workflows as Babashka scripts (`.clj`). Utilize Clojure's native thread-safe concurrency models, HTTP client packages, and clean process control wrappers to coordinate external actions and verify system health without adding overhead or signal handling complications to the main runtime application.
+
+## Shared Constant Single Source of Truth
+- **Pattern**: Any threshold or goal metric referenced by both the optimizer/seeder and the dashboard/UI must live in *one* module and be imported everywhere else. Never copy-paste numeric literals across files.
+- **Anti-pattern**: `TARGET_PNL = 200.0` in `iteration.py` while `TARGET_PNL = 2000.0` in `seed_stats.py` — the operator can never trust the iteration runner's "goal reached" output.
+- **Benefit**: A one-line edit to the constant is automatically reflected in every metric, badge, and log line that references it.
+
+## Thread-Safe Singleton with I/O Outside Lock
+- **Pattern**: When a singleton holds mutable state (e.g. `StrategyPool.strategies` dict) and is accessed from multiple threads, wrap all dict mutations in a `threading.Lock`. Crucially, **release the lock before** performing file I/O (the atomic write). Holding a lock across a syscall serializes all readers for the duration of disk writes, causing unnecessary contention.
+- **Implementation**: `with self._lock: data = {copy dict}` then `os.replace(tmp, path)` outside the lock.
+
+## Top-of-File Import Invariant
+- **Pattern**: All `import` statements belong at the top of the module, regardless of where the using function is defined. Python resolves names at *call time*, so a function defined before an import statement will work if the import runs first — but a reader cannot tell without careful inspection, and removing or re-ordering the import produces a hard-to-diagnose `NameError`.
+- **Anti-pattern**: `import tempfile` on line 97 while `tempfile.mkstemp(...)` is called in a function body on line 86.

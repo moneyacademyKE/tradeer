@@ -96,7 +96,6 @@ class ExchangeAdapter:
                 logger.debug("Could not read last ticker from shared state for price fallback.")
             
             base_price = last_ticker.last if last_ticker else 67000.0
-            base_price = last_ticker.last if last_ticker else 67000.0
             # High-amplitude sine oscillation: ±5% per cycle.
             # RSI-14 lags by ~4 ticks (~0.7%). With ±5% = 10% peak-to-peak,
             # strategies profit by ~8% per cycle. Obvious and reliable.

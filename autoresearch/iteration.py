@@ -2,7 +2,7 @@
 Autoresearch iteration: a single "train, evaluate, keep/discard" cycle.
 
 Run the live bot for a fixed duration, read pool_stats.json, then:
-- If the goal is met (>=3 strategies with current_pnl > $200), exit success
+- If the goal is met (>=3 strategies with current_pnl > TARGET_PNL), exit success
 - Otherwise, replace the worst strategies with mutations of the best, and
   signal the caller to run another cycle.
 
@@ -16,12 +16,18 @@ import os
 import signal
 import subprocess
 import sys
+import tempfile
 import time
+import uuid
 from typing import Dict, List, Optional, Tuple
 
 POOL_FILE = "strategy_pool.json"
 STATS_FILE = "data/pool_stats.json"
-TARGET_PNL = 200.0
+# Single source of truth: import from seed_stats to keep optimizer and UI aligned
+try:
+    from autoresearch.seed_stats import TARGET_PNL
+except ImportError:
+    TARGET_PNL = 2000.0
 MIN_ABOVE = 3
 
 
@@ -94,8 +100,6 @@ def save_pool(pool: Dict[str, dict]) -> None:
         raise
 
 
-import tempfile
-import uuid
 
 
 def reseed_strategies(pool: Dict[str, dict], stats: dict, n_keep: int = 25) -> None:

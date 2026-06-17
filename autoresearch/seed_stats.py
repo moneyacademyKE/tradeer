@@ -261,9 +261,6 @@ def seed_pool_stats(
         seed=seed,
     )
     # Persist pool atomically
-    fd, tmp = os.path.dirname(pool_file) or ".", None
-    if tmp is not None and not os.path.exists(tmp):
-        os.makedirs(tmp, exist_ok=True)
     import tempfile
     fd, tmp = tempfile.mkstemp(dir=".")
     try:
@@ -274,13 +271,20 @@ def seed_pool_stats(
         if os.path.exists(tmp):
             os.unlink(tmp)
         raise
-    # Persist stats (mirror save_pool_stats: drop returns/equity_curve)
+    # Persist stats atomically (mirror save_pool_stats: drop returns/equity_curve)
     os.makedirs(os.path.dirname(stats_file), exist_ok=True)
     serializable = {}
     for sid, s in stats.items():
         serializable[sid] = {k: v for k, v in s.items() if k not in ("returns", "equity_curve")}
-    with open(stats_file, "w") as f:
-        json.dump(serializable, f, indent=2)
+    fd2, tmp2 = tempfile.mkstemp(dir=os.path.dirname(stats_file) or ".")
+    try:
+        with os.fdopen(fd2, "w") as f:
+            json.dump(serializable, f, indent=2)
+        os.replace(tmp2, stats_file)
+    except Exception:
+        if os.path.exists(tmp2):
+            os.unlink(tmp2)
+        raise
     return pool, stats
 
 

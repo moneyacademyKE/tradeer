@@ -81,14 +81,17 @@ async def get_signals_code():
 async def get_strategy_detail(strategy_id: str):
     from src.strategy_pool import POOL
     if strategy_id == "base":
-        with open("src/signals.py", "r") as f:
-            return {"id": "base", "name": "Base RSI Strategy", "code": f.read()}
-    
+        try:
+            with open("src/signals.py", "r") as f:
+                return {"id": "base", "name": "Base RSI Strategy", "code": f.read()}
+        except OSError as e:
+            return {"error": f"Could not read signals.py: {e}"}
+
     strat = POOL.strategies.get(strategy_id)
     if strat:
         return {
-            "id": strat.id, 
-            "name": strat.name, 
+            "id": strat.id,
+            "name": strat.name,
             "code": strat.code,
             "explanation": strat.explanation
         }
@@ -184,7 +187,7 @@ async def autoresearch_run(payload: dict = None):
             seed=seed,
             market_steps=market_steps,
         )
-        n_above = sum(1 for k, v in stats.items() if k != "base" and v.get("current_pnl", 0) > 2000.0)
+        n_above = sum(1 for k, v in stats.items() if k != "base" and v.get("current_pnl", 0) > target)
         # Log the iteration
         log_path = "data/autoresearch_log.json"
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
