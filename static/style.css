@@ -570,3 +570,55 @@ h3 {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── BREACHED strategy card state ──────────────────────────────────────────── */
+.strategy-card.breached {
+    opacity: 0.55;
+    border-color: rgba(239, 68, 68, 0.4);
+    filter: saturate(0.5);
+}
+.strategy-card.breached:hover {
+    transform: translateY(-4px) scale(1.01);
+    border-color: var(--accent-red);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+    opacity: 0.75;
+}
+/* Suppress the blue top-shimmer line on breached cards */
+.strategy-card.breached::before {
+    background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+}
+.breached-pill {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* ── Orphan badge in Trading Lab header ─────────────────────────────────────── */
+.orphan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: oklch(85% 0.15 50);
+    background: oklch(50% 0.15 50 / 0.12);
+    border: 1px solid oklch(60% 0.15 50 / 0.35);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    animation: orphan-pulse 2s ease-in-out infinite;
+}
+@keyframes orphan-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(60% 0.15 50 / 0.4); }
+    50% { box-shadow: 0 0 0 4px oklch(60% 0.15 50 / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .orphan-badge { animation: none; }
+}

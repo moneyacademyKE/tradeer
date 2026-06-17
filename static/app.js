@@ -61,6 +61,8 @@
     let currentSignalsData = { static: '', dynamic: '' };
     let activeTab = 'static';
     let errorBanner = null;
+    let orphanCount = 0;
+    let pollInterval = null;
 
     function renderSkeletons() {
         if (!elements.experimentList) return;
@@ -154,12 +156,17 @@
             const chartId = `chart-${id.replace(/[^a-zA-Z0-9]/g, '')}`;
             const escapedId = escapeHtml(id);
             const escapedName = escapeHtml(stats.name || id);
+            const isBreached = stats.action === 'BREACHED';
             const actionClass = escapeHtml((stats.action || 'hold').toLowerCase());
+            const winRate = (((stats.wins || 0) / (stats.trades || 1)) * 100).toFixed(1);
             return `
-                <div class="strategy-card" data-id="${escapedId}">
+                <div class="strategy-card${isBreached ? ' breached' : ''}" data-id="${escapedId}">
                     <div class="card-header">
                         <h3>${escapedName}</h3>
-                        <div class="pulse ${actionClass}"></div>
+                        ${isBreached
+                            ? '<span class="breached-pill">BREACHED</span>'
+                            : `<div class="pulse ${actionClass}"></div>`
+                        }
                     </div>
                     <div class="chart-mini" id="${chartId}"></div>
                     <div class="metrics">
@@ -168,8 +175,12 @@
                             <span class="value ${pnlClass}">${(stats.pnl || 0).toFixed(2)}</span>
                         </div>
                         <div class="metric">
+                            <span class="label">Trades</span>
+                            <span class="value">${stats.trades || 0}</span>
+                        </div>
+                        <div class="metric">
                             <span class="label">Win Rate</span>
-                            <span class="value">${(((stats.wins || 0) / (stats.trades || 1)) * 100).toFixed(1)}%</span>
+                            <span class="value">${winRate}%</span>
                         </div>
                     </div>
                 </div>
@@ -421,8 +432,39 @@
         });
     });
 
-    setInterval(updateDashboard, 2000);
+    // Orphan count badge: fetch autoresearch health every 30s
+    async function fetchAutoresearchHealth() {
+        try {
+            const res = await authFetch('/api/autoresearch/state');
+            const data = await res.json();
+            orphanCount = data.orphan_count || 0;
+            const badge = document.getElementById('orphan-badge');
+            const countEl = document.getElementById('orphan-count');
+            if (badge && countEl) {
+                badge.style.display = orphanCount > 0 ? 'inline-flex' : 'none';
+                countEl.textContent = orphanCount;
+            }
+        } catch (_) { /* secondary concern — silent */ }
+    }
+
+    // Auto-pause polling when the browser tab is hidden
+    function startPolling() {
+        if (pollInterval) return;
+        pollInterval = setInterval(updateDashboard, 2000);
+    }
+    function stopPolling() {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopPolling();
+        else { updateDashboard(); startPolling(); }
+    });
+
+    startPolling();
     renderSkeletons();
     updateDashboard();
     fetchSignalsCode();
+    fetchAutoresearchHealth();
+    setInterval(fetchAutoresearchHealth, 30000);
 })();

@@ -200,17 +200,49 @@ async def autoresearch_run(payload: dict = None):
             "ts": int(__import__("time").time()),
             "seed": seed,
             "pool_size": len(pool),
-            "n_above_2000": n_above,
+            "n_above_target": n_above,
         })
         with open(log_path, "w") as f:
             _json.dump(log, f, indent=2)
         return {
             "ok": True,
             "pool_size": len(pool),
-            "n_above_2000": n_above,
+            "n_above_target": n_above,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"autoresearch run failed: {e}")
+
+
+@app.post("/api/autoresearch/reseed", dependencies=[Depends(verify_auth)])
+async def autoresearch_reseed(payload: dict = None):
+    """Keep top n_keep strategies by current P/L, mutate the rest.
+    This is the 'Reseed From Top Winners' action — distinct from a full seed_pool_stats run."""
+    import json as _json
+    import asyncio
+    try:
+        n_keep = int((payload or {}).get("n_keep", 25))
+        from autoresearch.iteration import reseed_strategies
+        # Load current pool and stats from disk
+        try:
+            with open("strategy_pool.json") as f:
+                pool = _json.load(f)
+        except Exception:
+            pool = {}
+        try:
+            with open("data/pool_stats.json") as f:
+                stats = _json.load(f)
+        except Exception:
+            stats = {}
+        await asyncio.to_thread(reseed_strategies, pool, stats, n_keep)
+        # Reload to get updated count
+        try:
+            with open("strategy_pool.json") as f:
+                new_pool = _json.load(f)
+        except Exception:
+            new_pool = {}
+        return {"ok": True, "pool_size": len(new_pool)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"reseed failed: {e}")
 
 
 @app.get("/")
