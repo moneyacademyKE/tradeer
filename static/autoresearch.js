@@ -6,6 +6,9 @@
  *   - Visible error toast on fetch failure (matches app.js behaviour)
  *   - Drawdown column added to winners/losers rows
  *   - Auto-pause polling when browser tab is hidden
+ *   - Strategy detail modal display on row click
+ *   - Configurable parameters read from expandable DOM form
+ *   - SVG Sparkline of winners-over-time trend
  */
 (() => {
     'use strict';
@@ -16,6 +19,7 @@
     let errorBanner = null;
     let refreshTimer = null;
     let targetPnl = 2000; // overwritten by first API response
+    let stateSnapshot = null; // keeps track of the latest metrics state for modals
 
     // ── Auth ────────────────────────────────────────────────────────────────
     function encodeCredentials(u, p) { return 'Basic ' + btoa(u + ':' + p); }
@@ -86,13 +90,126 @@
     // ── Strategy row renderer (winners + losers) ─────────────────────────────
     function stratRow(w, pnlClass) {
         return `
-            <div class="strat-row">
+            <div class="strat-row clickable-row" data-id="${escapeHtml(w.id)}">
                 <span class="id">${escapeHtml(w.id.slice(0, 8))}</span>
                 <span class="name" title="${escapeHtml(w.name)}">${escapeHtml(w.name)}</span>
                 <span class="trades">t=${w.trades} w=${w.wins}</span>
                 <span class="trades" style="color:var(--accent-red)">dd=$${fmt(Math.abs(w.drawdown ?? 0))}</span>
                 <span class="pnl ${pnlClass}">${fmtPnl(w.current_pnl)}</span>
             </div>`;
+    }
+
+    // ── SVG Sparkline Renderer for Iteration Log ────────────────────────────
+    function renderSparkline(iterations) {
+        const container = $('sparkline-container');
+        if (!container) return;
+
+        if (!iterations || iterations.length < 2) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+
+        const data = iterations.map(it => it.n_above_target ?? it.n_above_2000 ?? 0);
+        const maxVal = Math.max(...data, 3);
+        const minVal = Math.min(...data, 0);
+
+        const width = container.clientWidth || 600;
+        const height = 50;
+        const padding = 6;
+
+        const points = data.map((val, idx) => {
+            const x = padding + (idx / (data.length - 1)) * (width - padding * 2);
+            const y = height - padding - ((val - minVal) / (maxVal - minVal)) * (height - padding * 2);
+            return { x, y, val };
+        });
+
+        const polylinePoints = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+        let svgHtml = `
+            <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
+                <defs>
+                    <linearGradient id="sparkline-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--accent-blue)" stop-opacity="0.25"></stop>
+                        <stop offset="100%" stop-color="var(--accent-blue)" stop-opacity="0"></stop>
+                    </linearGradient>
+                </defs>
+                <!-- Shaded Area Under Curve -->
+                <path d="M ${points[0].x.toFixed(1)},${height} ${points.map(p => `L ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')} L ${points[points.length - 1].x.toFixed(1)},${height} Z" fill="url(#sparkline-gradient)"></path>
+                <!-- Line path -->
+                <polyline points="${polylinePoints}" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <!-- Pulse points -->
+                ${points.map((p, idx) => `
+                    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--text-primary)" stroke="var(--accent-blue)" stroke-width="1.5" style="cursor: pointer;">
+                        <title>Run ${idx + 1}: ${p.val} above target</title>
+                    </circle>
+                `).join('')}
+            </svg>
+        `;
+        container.innerHTML = svgHtml;
+    }
+
+    // ── Strategy Detail Modal Renderer ──────────────────────────────────────
+    async function showStrategyDetail(id) {
+        const modal = $('strategy-modal');
+        const statsContainer = $('modal-stats');
+        const codeContainer = $('modal-code');
+        const title = $('modal-title');
+
+        try {
+            const response = await authFetch(`/api/strategy/${encodeURIComponent(id)}`);
+            if (!response.ok) {
+                throw new Error(`Strategy API returned ${response.status}`);
+            }
+            const data = await response.json();
+
+            // Resolve statistics from snapshot
+            let stats = null;
+            if (stateSnapshot) {
+                stats = stateSnapshot.top_winners.find(w => w.id === id) ||
+                        stateSnapshot.top_losers.find(w => w.id === id) ||
+                        (stateSnapshot.orphans && stateSnapshot.orphans.find(w => w.id === id));
+            }
+
+            if (title) title.textContent = data.name || id;
+            if (codeContainer) codeContainer.textContent = data.code || "// Pure logic hidden";
+
+            if (statsContainer) {
+                let html = `
+                    <div class="explanation-box glass">
+                        <p>${escapeHtml(data.explanation || "De-complected mutation.")}</p>
+                    </div>
+                    <div class="stats-grid">
+                `;
+
+                if (stats) {
+                    const metrics = {
+                        "PnL": fmtPnl(stats.current_pnl),
+                        "Trades": stats.trades,
+                        "Wins": stats.wins,
+                        "Win Rate": stats.trades > 0 ? ((stats.wins / stats.trades) * 100).toFixed(1) + '%' : '0%',
+                        "Drawdown": '$' + fmt(stats.drawdown),
+                        "Peak": '$' + fmt(stats.peak),
+                        "Action": stats.action
+                    };
+                    for (const [key, val] of Object.entries(metrics)) {
+                        html += `
+                            <div class="stat-card mini glass">
+                                <span class="label">${escapeHtml(key)}</span>
+                                <span class="value">${escapeHtml(String(val))}</span>
+                            </div>
+                        `;
+                    }
+                }
+                html += `</div>`;
+                statsContainer.innerHTML = html;
+            }
+
+            if (modal) modal.showModal();
+        } catch (e) {
+            showError("Failed to load strategy details.");
+        }
     }
 
     // ── Render ───────────────────────────────────────────────────────────────
@@ -174,6 +291,9 @@
                 </div>`;
             }).join('');
         }
+
+        // Render sparkline trend visualization
+        renderSparkline(d.iterations);
     }
 
     // ── Data fetch ───────────────────────────────────────────────────────────
@@ -182,6 +302,7 @@
             $('status-text').innerHTML = '<span class="spinner"></span>Loading state…';
             const res = await authFetch('/api/autoresearch/state');
             const data = await res.json();
+            stateSnapshot = data;
             targetPnl = data.target_pnl || 2000;
             render(data);
             $('status-text').textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
@@ -202,15 +323,33 @@
     async function runCycle() {
         setAllBtns(true);
         $('status-text').innerHTML = '<span class="spinner"></span>Running evolution cycle… (this can take a minute)';
+        
+        // Read parameters form inputs
+        const poolSizeInput = $('param-pool-size');
+        const minAboveInput = $('param-min-above');
+        const marketStepsInput = $('param-market-steps');
+        const seedInput = $('param-seed');
+
+        const poolSizeVal = poolSizeInput ? parseInt(poolSizeInput.value, 10) || 50 : 50;
+        const minAboveVal = minAboveInput ? parseInt(minAboveInput.value, 10) || 5 : 5;
+        const marketStepsVal = marketStepsInput ? parseInt(marketStepsInput.value, 10) || 10000 : 10000;
+        
+        let seedVal = seedInput ? seedInput.value.trim() : "";
+        if (!seedVal) {
+            seedVal = Math.floor(Math.random() * 1e6);
+        } else {
+            seedVal = parseInt(seedVal, 10) || Math.floor(Math.random() * 1e6);
+        }
+
         try {
             const res = await authFetch('/api/autoresearch/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    seed: Math.floor(Math.random() * 1e6),
-                    pool_size: 50,
-                    min_above_target: 5,
-                    market_steps: 10000,
+                    seed: seedVal,
+                    pool_size: poolSizeVal,
+                    min_above_target: minAboveVal,
+                    market_steps: marketStepsVal,
                 }),
             });
             const data = await res.json();
@@ -248,7 +387,38 @@
     // ── Event bindings ───────────────────────────────────────────────────────
     $('run-btn').addEventListener('click', runCycle);
     $('refresh-btn').addEventListener('click', refresh);
-    $('reseed-btn').addEventListener('click', reseedPool);  // ← now calls distinct reseedPool()
+    $('reseed-btn').addEventListener('click', reseedPool);
+
+    // Event delegation for row clicks
+    function bindRowClicks(listId) {
+        const list = $(listId);
+        if (list) {
+            list.addEventListener('click', (e) => {
+                const row = e.target.closest('.strat-row');
+                if (row) {
+                    const id = row.getAttribute('data-id');
+                    if (id) showStrategyDetail(id);
+                }
+            });
+        }
+    }
+    bindRowClicks('winners-list');
+    bindRowClicks('losers-list');
+
+    // Dialog close hooks
+    const strategyModal = $('strategy-modal');
+    if (strategyModal) {
+        const closeBtn = $('close-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => strategyModal.close());
+        }
+        strategyModal.addEventListener('click', (e) => {
+            if (e.target === strategyModal) strategyModal.close();
+        });
+        strategyModal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') strategyModal.close();
+        });
+    }
 
     // ── Auto-pause polling when tab is hidden ────────────────────────────────
     function startPolling() {

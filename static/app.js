@@ -63,6 +63,8 @@
     let errorBanner = null;
     let orphanCount = 0;
     let pollInterval = null;
+    let activeFilter = 'all';
+    let targetPnl = 2000;
 
     function renderSkeletons() {
         if (!elements.experimentList) return;
@@ -147,8 +149,15 @@
         const sortedStats = Object.entries(state.strategy_stats)
             .sort((a, b) => b[1].pnl - a[1].pnl);
 
+        const filteredStats = sortedStats.filter(([id, stats]) => {
+            if (activeFilter === 'profitable') return (stats.pnl || 0) > 0;
+            if (activeFilter === 'above-target') return (stats.pnl || 0) >= targetPnl;
+            if (activeFilter === 'breached') return stats.action === 'BREACHED';
+            return true; // 'all'
+        });
+
         if (elements.experimentBadge) {
-            elements.experimentBadge.textContent = `${sortedStats.length} EXPERIMENTS`;
+            elements.experimentBadge.textContent = `${filteredStats.length} EXPERIMENTS`;
         }
         
         list.innerHTML = sortedStats.map(([id, stats]) => {
@@ -432,11 +441,29 @@
         });
     });
 
+    // Filter chips click handling
+    const filterContainer = document.getElementById('filter-chips');
+    if (filterContainer) {
+        const chips = filterContainer.querySelectorAll('.chip');
+        filterContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.chip');
+            if (btn) {
+                chips.forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilter = btn.dataset.filter;
+                if (stateSnapshot) {
+                    renderExperiments(stateSnapshot);
+                }
+            }
+        });
+    }
+
     // Orphan count badge: fetch autoresearch health every 30s
     async function fetchAutoresearchHealth() {
         try {
             const res = await authFetch('/api/autoresearch/state');
             const data = await res.json();
+            targetPnl = data.target_pnl || 2000;
             orphanCount = data.orphan_count || 0;
             const badge = document.getElementById('orphan-badge');
             const countEl = document.getElementById('orphan-count');

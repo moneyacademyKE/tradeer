@@ -304,6 +304,31 @@
                 </div>
             </section>
 
+            <!-- Expandable Parameters Form -->
+            <details class="ar-panel" style="margin-bottom: 1.5rem;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-secondary); user-select: none;">
+                    ⚙ Configuration Parameters
+                </summary>
+                <div class="ar-params-grid">
+                    <div class="ar-param-group">
+                        <label for="param-pool-size" class="ar-param-label">Pool Size</label>
+                        <input type="number" id="param-pool-size" class="ar-param-input" value="50" min="1" max="500">
+                    </div>
+                    <div class="ar-param-group">
+                        <label for="param-min-above" class="ar-param-label">Min Above Target</label>
+                        <input type="number" id="param-min-above" class="ar-param-input" value="5" min="0" max="100">
+                    </div>
+                    <div class="ar-param-group">
+                        <label for="param-market-steps" class="ar-param-label">Market Steps</label>
+                        <input type="number" id="param-market-steps" class="ar-param-input" value="10000" min="100" max="100000">
+                    </div>
+                    <div class="ar-param-group">
+                        <label for="param-seed" class="ar-param-label">Seed (Optional)</label>
+                        <input type="text" id="param-seed" class="ar-param-input" placeholder="Random">
+                    </div>
+                </div>
+            </details>
+
             <section class="ar-controls">
                 <button class="ar-btn" id="run-btn">Run Evolution Cycle</button>
                 <button class="ar-btn secondary" id="refresh-btn">Refresh</button>
@@ -324,12 +349,28 @@
 
             <section class="ar-panel" style="margin-bottom: 2rem;">
                 <h2>Iteration Log <span class="count" id="iter-count">0</span></h2>
+                <div id="sparkline-container" style="display: none; margin-bottom: 1.25rem;"></div>
                 <div class="iter-log" id="iter-log">
                     <div class="empty">No iterations yet. Press "Run Evolution Cycle" to seed a new pool.</div>
                 </div>
             </section>
         </main>
     </div>
+
+    <!-- Strategy Modal (HTML5 Dialog) -->
+    <dialog id="strategy-modal" class="modal">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="modal-title">Strategy Detail</h2>
+                <button class="close-btn" id="close-modal" aria-label="Close modal">&times;</button>
+            </header>
+            <div class="modal-scroll">
+                <div id="modal-stats"></div>
+                <h3>Logic Architecture</h3>
+                <pre id="modal-code"></pre>
+            </div>
+        </div>
+    </dialog>
 
     <script src="autoresearch.js"></script>
 </body>

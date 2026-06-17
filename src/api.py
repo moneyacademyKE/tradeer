@@ -87,6 +87,9 @@ async def get_strategy_detail(strategy_id: str):
         except OSError as e:
             return {"error": f"Could not read signals.py: {e}"}
 
+    if strategy_id not in POOL.strategies:
+        POOL.load()
+
     strat = POOL.strategies.get(strategy_id)
     if strat:
         return {

@@ -96,3 +96,20 @@
 ## Top-of-File Import Invariant
 - **Pattern**: All `import` statements belong at the top of the module, regardless of where the using function is defined. Python resolves names at *call time*, so a function defined before an import statement will work if the import runs first — but a reader cannot tell without careful inspection, and removing or re-ordering the import produces a hard-to-diagnose `NameError`.
 - **Anti-pattern**: `import tempfile` on line 97 while `tempfile.mkstemp(...)` is called in a function body on line 86.
+
+## Memory Liveness On-Demand Reload
+- **Pattern**: In read-heavy API routes that access dynamic caches (e.g. `POOL.strategies` loaded from `strategy_pool.json`), if a requested entity is not found in memory, trigger a cache reload (`POOL.load()`) from disk before failing.
+- **Benefit**: Restores synchronization immediately when external background processes write new entries to the shared state file, removing the need to restart the main server.
+
+## Inline SVG Sparklines for Log Trends
+- **Pattern**: In logs and history lists, map numeric time-series fields directly to coordinate points on an inline SVG polyline/path element. Style with a transparent area gradient fill and circle points.
+- **Benefit**: Provides visual trend confirmation (convergence, plateaus) inline without loading heavy graphical scripts.
+
+## Expandable Parameter Overrides
+- **Pattern**: Place tuning inputs and backtesting parameters inside native HTML `<details>` details sections. Toggle visibility cleanly and read inputs directly on execution trigger to bind custom payloads to backend endpoints.
+- **Benefit**: Declutters the main dashboard while allowing operators to scale backtesting/evolution step counts dynamically.
+
+## Real-Time Grid Filtering
+- **Pattern**: When displaying high-density cards, provide filter buttons (`All`, `Profitable`, `Above Target`, `Breached`) to slice the collection on the client side without refetching from the API.
+- **Benefit**: Increases user efficiency when analyzing state sets and eliminates server network load.
+

@@ -622,3 +622,101 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
     .orphan-badge { animation: none; }
 }
+
+/* ── Clickable Rows for list views ────────────────────────────────────────── */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.clickable-row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    transform: translateX(4px);
+}
+
+/* ── Expandable Config Parameters ─────────────────────────────────────────── */
+.ar-params-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+}
+.ar-param-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.ar-param-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+.ar-param-input {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ar-param-input:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── SVG Sparkline Container ──────────────────────────────────────────────── */
+#sparkline-container {
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+}
+#sparkline-container svg circle {
+    transition: r 0.15s ease, fill 0.15s ease;
+}
+#sparkline-container svg circle:hover {
+    r: 5;
+    fill: var(--accent-blue);
+}
+
+/* ── Section Header & Filter Chips ────────────────────────────────────────── */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.filter-chips {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.chip {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chip:hover {
+    color: var(--text-primary);
+    border-color: var(--accent-blue);
+}
+.chip.active {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    background: var(--accent-glow);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
