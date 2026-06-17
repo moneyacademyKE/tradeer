@@ -34,39 +34,116 @@
     "explanation": "Pre-built synthetic strategy",
     "parent_id": null
   },
-  "16a36395": {
-    "id": "16a36395",
-    "code": "def calculate_dynamic_signals(state, history): return {}\n# autogen tweak for def calculate_dynami\n",
-    "name": "R0_16a363",
-    "explanation": "reseeded iter",
-    "parent_id": null
+  "a800d52e": {
+    "id": "a800d52e",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 18 and rsi_14 < 35 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 65 and ema_20 > 0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "RSI_14_25_75_Crossover",
+    "explanation": "Combines fast RSI with slower RSI and requires positive EMA_20 to reduce whipsaws while tightening the parent strategy thresholds.",
+    "parent_id": "edff016e"
   },
-  "70529b23": {
-    "id": "70529b23",
-    "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    signals = {}\n    if rsi_14 < 60:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 11:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "R1_70529b",
-    "explanation": "reseeded iter",
-    "parent_id": null
+  "ff05b466": {
+    "id": "ff05b466",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_2 < 18 and rsi_14 < 36 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 66:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "RSI2_RSI14_EMA20_Confirmation",
+    "explanation": "Mutated the parent by combining fast RSI, slow RSI, and EMA confirmation with adjusted thresholds for more selective entries and exits.",
+    "parent_id": "a60b5595"
   },
-  "c76fee75": {
-    "id": "c76fee75",
-    "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_2 < 10 and rsi_14 < 40 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 90 and rsi_14 > 60:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "R2_c76fee",
-    "explanation": "reseeded iter",
-    "parent_id": null
+  "5c61237b": {
+    "id": "5c61237b",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = 'BTC/USDT'\n    rsi_2 = state.signals.get(f'{symbol}_rsi_2', 50.0)\n    rsi_14 = state.signals.get(f'{symbol}_rsi_14', 50.0)\n    ema_20 = state.signals.get(f'{symbol}_ema_20', 0.0)\n    signals = {}\n    if rsi_2 < 15 and rsi_14 < 45:\n        signals['gemini_buy'] = 1.0\n    elif rsi_2 > 85 and rsi_14 > 55:\n        signals['gemini_sell'] = 1.0\n    return signals",
+    "name": "rsi_confluence_mutation",
+    "explanation": "Combines fast and slow RSI thresholds to reduce false signals.",
+    "parent_id": "dab99d86"
   },
-  "cf13bf03": {
-    "id": "cf13bf03",
-    "code": "def calculate_dynamic_signals(state, history): return {}",
-    "name": "R3_cf13bf",
-    "explanation": "reseeded iter",
-    "parent_id": null
+  "14bc4fa9": {
+    "id": "14bc4fa9",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_2 < 25 and rsi_14 < 35:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 75 and rsi_14 > 65:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi_2_14_confluence_thresholds",
+    "explanation": "Mutated to require both fast and medium RSI confirmation, with slightly wider threshold bands than the parent.",
+    "parent_id": "edff016e"
   },
-  "c3963dcb": {
-    "id": "c3963dcb",
-    "code": "\ndef calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    signals = {}\n    if rsi_2 < 1:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 99:\n        signals[\"gemini_sell\"] = 1.0\n    return signals\n",
-    "name": "R4_c3963d",
-    "explanation": "reseeded iter",
-    "parent_id": null
+  "ea29149f": {
+    "id": "ea29149f",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 22 and rsi_14 < 38 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 78 and rsi_14 > 62 and ema_20 > 0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "combined_rsi_ema_thresholds",
+    "explanation": "Mutated the parent by adding combined RSI confirmation and EMA availability checks with adjusted thresholds.",
+    "parent_id": "1816fa2a"
+  },
+  "f71e4d82": {
+    "id": "f71e4d82",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 25 and rsi_14 < 45 and ema_20 > 0.0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 75 and rsi_14 > 55 and ema_20 > 0.0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi_ema_combined_v1",
+    "explanation": "Mutated the empty parent strategy into a combined RSI/EMA signal using stricter oversold and overbought thresholds.",
+    "parent_id": "1816fa2a"
+  },
+  "fc35917b": {
+    "id": "fc35917b",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_14 < 35 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 65 and rsi_2 > 75:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi_ema_combined_thresholds_v1",
+    "explanation": "Adjusted RSI thresholds and combined RSI-14 with EMA-20 for buys, while adding RSI-2 confirmation for sells.",
+    "parent_id": "a60b5595"
+  },
+  "5835d02b": {
+    "id": "5835d02b",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 12 and rsi_14 < 45:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 88 and rsi_14 > 55:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "tight_rsi_pair_mutation",
+    "explanation": "Combines fast RSI and slower RSI confirmation with tighter thresholds to reduce false entries.",
+    "parent_id": "edff016e"
+  },
+  "f5faead8": {
+    "id": "f5faead8",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_14 < 32 and rsi_2 < 25:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_14 > 68 and rsi_2 > 75:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "RSI14_RSI2_oversold_overbought",
+    "explanation": "Tightens the parent RSI bands and requires agreement from the faster RSI-2 before issuing a signal.",
+    "parent_id": "afbd2904"
+  },
+  "e0c7cafe": {
+    "id": "e0c7cafe",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_2 < 18 and rsi_14 < 45 and ema_20 > 0.0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 58 and ema_20 > 0.0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi_combo_trend_filter",
+    "explanation": "Combines RSI 2 and RSI 14 thresholds with an EMA 20 availability filter to reduce false RSI extremes.",
+    "parent_id": "dab99d86"
+  },
+  "31aa2763": {
+    "id": "31aa2763",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 18 and rsi_14 < 42 and ema_20 > 0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 58 and ema_20 > 0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "tightened_rsi_momentum",
+    "explanation": "Tightened the RSI thresholds and kept the combined RSI-2, RSI-14, and EMA-20 confirmation logic.",
+    "parent_id": "ea29149f"
+  },
+  "9c0e1d63": {
+    "id": "9c0e1d63",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 18 and rsi_14 < 42:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 58:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi_2_14_confluence",
+    "explanation": "Combines short-term and medium-term RSI thresholds for more selective buy and sell signals.",
+    "parent_id": "dab99d86"
+  },
+  "00558582": {
+    "id": "00558582",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = 'BTC/USDT'\n    rsi_2 = state.signals.get(f'{symbol}_rsi_2', 50.0)\n    rsi_14 = state.signals.get(f'{symbol}_rsi_14', 50.0)\n    ema_20 = state.signals.get(f'{symbol}_ema_20', 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 18 and rsi_14 < 42 and ema_20 > 0:\n        signals['gemini_buy'] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 58 and ema_20 > 0:\n        signals['gemini_sell'] = 1.0\n    return signals",
+    "name": "tighter_rsi_14_ema_filter",
+    "explanation": "Tightened the RSI thresholds and kept the combined RSI-14 plus EMA confirmation filter for entries and exits.",
+    "parent_id": "ea29149f"
+  },
+  "84400874": {
+    "id": "84400874",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: change thresholds, combine rsi_2/rsi_14/ema_20\n    if rsi_2 < 25 and rsi_14 < 45:\n        signals[\"gemini_buy\"] = 1.0 if ema_20 > 0.0 else 0.5\n    elif rsi_2 > 75 and rsi_14 > 55:\n        signals[\"gemini_sell\"] = 1.0 if ema_20 > 0.0 else 0.5\n    return signals",
+    "name": "rsi_2_14_confluence_25_75",
+    "explanation": "Combines fast and slow RSI thresholds: buy when RSI 2 is below 25 and RSI 14 is below 45; sell when RSI 2 is above 75 and RSI 14 is above 55.",
+    "parent_id": "1816fa2a"
+  },
+  "b7482906": {
+    "id": "b7482906",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    # MUTATE: combine rsi_2 and rsi_14 thresholds for stronger mean-reversion signals\n    if rsi_2 < 18 and rsi_14 < 50:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 82 and rsi_14 > 50:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "rsi2_rsi14_mean_reversion",
+    "explanation": "Buys only when very short-term RSI is deeply oversold and medium RSI is below neutral; sells when short-term RSI is extremely overbought and medium RSI is above neutral.",
+    "parent_id": "1816fa2a"
+  },
+  "bd2289f9": {
+    "id": "bd2289f9",
+    "code": "def calculate_dynamic_signals(state, history):\n    symbol = \"BTC/USDT\"\n    rsi_2 = state.signals.get(f\"{symbol}_rsi_2\", 50.0)\n    rsi_14 = state.signals.get(f\"{symbol}_rsi_14\", 50.0)\n    ema_20 = state.signals.get(f\"{symbol}_ema_20\", 0.0)\n    signals = {}\n    if rsi_2 < 16 and rsi_14 < 42 and ema_20 > 0.0:\n        signals[\"gemini_buy\"] = 1.0\n    elif rsi_2 > 84 and rsi_14 > 62 and ema_20 > 0.0:\n        signals[\"gemini_sell\"] = 1.0\n    return signals",
+    "name": "tighter_rsi_ema_reversal",
+    "explanation": "Tightens the RSI-2 reversal thresholds while keeping RSI-14 confirmation and positive EMA-20 filtering for both buy and sell signals.",
+    "parent_id": "e0c7cafe"
   }
 }
