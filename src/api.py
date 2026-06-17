@@ -94,6 +94,120 @@ async def get_strategy_detail(strategy_id: str):
         }
     return {"error": "Not found"}
 
+@app.get("/api/autoresearch/state", dependencies=[Depends(verify_auth)])
+async def get_autoresearch_state():
+    """Returns the current state of the autoresearch harness: pool size,
+    winners count at the active target, top performers, drawdown leaders."""
+    import json as _json
+    try:
+        with open("strategy_pool.json") as f:
+            pool = _json.load(f)
+    except Exception:
+        pool = {}
+    try:
+        with open("data/pool_stats.json") as f:
+            stats = _json.load(f)
+    except Exception:
+        stats = {}
+
+    # Read the live target from the seeder
+    try:
+        from autoresearch.seed_stats import TARGET_PNL, DEFAULT_POOL_SIZE
+        target = TARGET_PNL
+        pool_size_cap = DEFAULT_POOL_SIZE
+    except Exception:
+        target = 200.0
+        pool_size_cap = 50
+
+    ranked = []
+    for sid, s in stats.items():
+        if sid == "base":
+            continue
+        ranked.append({
+            "id": sid,
+            "name": s.get("name", sid),
+            "current_pnl": s.get("current_pnl", 0.0),
+            "trades": s.get("trades", 0),
+            "wins": s.get("wins", 0),
+            "drawdown": s.get("drawdown", 0.0),
+            "peak": s.get("peak", 0.0),
+            "action": s.get("action", "HOLD"),
+        })
+    ranked.sort(key=lambda x: -x["current_pnl"])
+
+    winners = [r for r in ranked if r["current_pnl"] > target]
+    losers = [r for r in ranked if r["current_pnl"] < 0]
+    losers.sort(key=lambda x: x["current_pnl"])
+    pool_ids = set(pool.keys())
+    orphans = [r for r in ranked if r["id"] not in pool_ids]
+
+    # Read iteration log if it exists
+    iterations = []
+    try:
+        if os.path.exists("data/autoresearch_log.json"):
+            with open("data/autoresearch_log.json") as f:
+                iterations = _json.load(f)
+    except Exception:
+        iterations = []
+
+    return {
+        "target_pnl": target,
+        "pool_size": len(pool),
+        "pool_cap": pool_size_cap,
+        "stats_size": len(ranked),
+        "above_target": len(winners),
+        "loser_count": len(losers),
+        "orphan_count": len(orphans),
+        "top_winners": ranked[:10],
+        "top_losers": losers[:5],
+        "orphans": orphans[:10],
+        "iterations": iterations[-20:],
+    }
+
+
+@app.post("/api/autoresearch/run", dependencies=[Depends(verify_auth)])
+async def autoresearch_run(payload: dict = None):
+    """Run one autoresearch cycle: reseed the pool from a backtest using
+    the current TARGET_PNL. Mirrors python3 -m autoresearch.seed_stats."""
+    import json as _json
+    try:
+        from autoresearch.seed_stats import seed_pool_stats
+        seed = int((payload or {}).get("seed", 42))
+        pool_size = int((payload or {}).get("pool_size", 50))
+        min_above = int((payload or {}).get("min_above_target", 5))
+        market_steps = int((payload or {}).get("market_steps", 10000))
+        pool, stats = seed_pool_stats(
+            pool_size=pool_size,
+            min_above_target=min_above,
+            seed=seed,
+            market_steps=market_steps,
+        )
+        n_above = sum(1 for k, v in stats.items() if k != "base" and v.get("current_pnl", 0) > 2000.0)
+        # Log the iteration
+        log_path = "data/autoresearch_log.json"
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        try:
+            with open(log_path) as f:
+                log = _json.load(f)
+        except Exception:
+            log = []
+        log.append({
+            "ts": int(__import__("time").time()),
+            "seed": seed,
+            "pool_size": len(pool),
+            "n_above_2000": n_above,
+        })
+        with open(log_path, "w") as f:
+            _json.dump(log, f, indent=2)
+        return {
+            "ok": True,
+            "pool_size": len(pool),
+            "n_above_2000": n_above,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"autoresearch run failed: {e}")
+
+
 @app.get("/")
 async def root():
     return {"message": "Tradeer-Hickey API is running. Visit /static/index.html for the dashboard."}

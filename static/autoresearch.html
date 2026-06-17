@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tradeer Autoresearch Dashboard - Monitor the Karpathy-pattern evolutionary loop driving the strategy pool toward higher P/L.">
+    <title>Autoresearch Lab - Tradeer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧬</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Page-specific layout */
+        .ar-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .ar-nav { display: flex; gap: 0.75rem; align-items: center; }
+        .ar-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.4rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
+        }
+        .ar-nav a:hover { color: var(--text-primary); border-color: var(--accent-blue); }
+        .ar-nav a.active {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: var(--accent-glow);
+        }
+
+        /* Headline metrics row */
+        .ar-headline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .ar-metric {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+        }
+        .ar-metric .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .ar-metric .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .ar-metric .value.pnl-pos { color: var(--accent-green); }
+        .ar-metric .value.pnl-neg { color: var(--accent-red); }
+        .ar-metric .sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.4rem;
+        }
+
+        /* Progress bar toward goal */
+        .goal-bar-wrap {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .goal-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.6rem;
+        }
+        .goal-bar-label .target { color: var(--accent-blue); font-weight: 600; }
+        .goal-bar {
+            height: 8px;
+            background: oklch(0% 0 0 / 0.4);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .goal-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            border-radius: 999px;
+            transition: width 0.5s ease-out;
+        }
+        .goal-bar-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Control row */
+        .ar-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        .ar-btn {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.7rem 1.4rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+        .ar-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+        .ar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ar-btn.secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+        .ar-btn.danger { background: var(--accent-red); }
+        .ar-status {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        /* Two-column layout for winners / losers */
+        .ar-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 900px) { .ar-split { grid-template-columns: 1fr; } }
+
+        .ar-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+        }
+        .ar-panel h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ar-panel h2 .count {
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            background: oklch(0% 0 0 / 0.3);
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+        }
+
+        /* Strategy row */
+        .strat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.7rem 0.4rem;
+            border-bottom: 1px solid var(--glass-border);
+            gap: 0.75rem;
+        }
+        .strat-row:last-child { border-bottom: none; }
+        .strat-row .name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .strat-row .id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        .strat-row .pnl {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.95rem;
+            min-width: 90px;
+            text-align: right;
+        }
+        .strat-row .trades {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            min-width: 70px;
+            text-align: right;
+        }
+
+        /* Iteration log */
+        .iter-log {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            background: oklch(0% 0 0 / 0.3);
+            padding: 0.9rem;
+            border-radius: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .iter-log .line { padding: 0.15rem 0; }
+        .iter-log .line .ts { color: var(--text-secondary); }
+        .iter-log .line .ok { color: var(--accent-green); }
+        .iter-log .line .err { color: var(--accent-red); }
+        .iter-log .line .n { color: var(--accent-blue); font-weight: 700; }
+
+        /* Empty state */
+        .empty {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 2rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid var(--text-secondary);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.4rem;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Orphan / health warnings */
+        .warning {
+            background: oklch(50% 0.15 50 / 0.1);
+            border: 1px solid oklch(60% 0.15 50 / 0.3);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            color: oklch(85% 0.15 50);
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <noscript>
+        <div style="padding: 2rem; text-align: center; color: #f8fafc; background: #0c0e12; min-height: 100vh;">
+            <h1>JavaScript Required</h1>
+        </div>
+    </noscript>
+
+    <div class="ar-container">
+        <header>
+            <div class="logo">
+                <h1>Autoresearch<span>_Loop</span></h1>
+            </div>
+            <div class="ar-nav">
+                <a href="/static/index.html">Trading Lab</a>
+                <a href="/static/autoresearch.html" class="active">Autoresearch</a>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">TARGET: <span id="target-pnl">$0</span></div>
+                <div class="stat-item">POOL: <span id="pool-size">0</span></div>
+                <div class="stat-item" id="bot-status">EVOLVING</div>
+            </div>
+        </header>
+
+        <main>
+            <div id="health-warning" class="warning" style="display:none"></div>
+
+            <section class="ar-headline" id="headline"></section>
+
+            <section class="goal-bar-wrap">
+                <div class="goal-bar-label">
+                    <span>Goal: at least 3 strategies with P/L above target</span>
+                    <span class="target"><span id="goal-progress-text">0 / 3</span></span>
+                </div>
+                <div class="goal-bar"><div class="goal-bar-fill" id="goal-bar-fill" style="width: 0%"></div></div>
+                <div class="goal-bar-meta">
+                    <span id="goal-bar-left">0 strategies above target</span>
+                    <span id="goal-bar-right">0% of pool</span>
+                </div>
+            </section>
+
+            <section class="ar-controls">
+                <button class="ar-btn" id="run-btn">Run Evolution Cycle</button>
+                <button class="ar-btn secondary" id="refresh-btn">Refresh</button>
+                <button class="ar-btn secondary" id="reseed-btn">Reseed From Top Winners</button>
+                <div class="ar-status" id="status-text">Idle.</div>
+            </section>
+
+            <section class="ar-split">
+                <div class="ar-panel">
+                    <h2>Top Winners <span class="count" id="winner-count">0</span></h2>
+                    <div id="winners-list"></div>
+                </div>
+                <div class="ar-panel">
+                    <h2>Top Losers <span class="count" id="loser-count">0</span></h2>
+                    <div id="losers-list"></div>
+                </div>
+            </section>
+
+            <section class="ar-panel" style="margin-bottom: 2rem;">
+                <h2>Iteration Log <span class="count" id="iter-count">0</span></h2>
+                <div class="iter-log" id="iter-log">
+                    <div class="empty">No iterations yet. Press "Run Evolution Cycle" to seed a new pool.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+    (() => {
+        'use strict';
+
+        const AUTH_KEY = 'dashboard_auth';
+        let authHeader = localStorage.getItem(AUTH_KEY);
+        let authPromptShown = false;
+
+        function encodeCredentials(u, p) { return 'Basic ' + btoa(u + ':' + p); }
+        function getAuthHeaders() { return authHeader ? { 'Authorization': authHeader } : {}; }
+
+        async function authFetch(url, options = {}) {
+            const res = await fetch(url, { ...options, headers: { ...getAuthHeaders(), ...options.headers } });
+            if (res.status === 401 && !authPromptShown) {
+                authPromptShown = true;
+                const u = prompt('Dashboard username:');
+                const p = prompt('Dashboard password:');
+                if (u && p) {
+                    authHeader = encodeCredentials(u, p);
+                    localStorage.setItem(AUTH_KEY, authHeader);
+                    return authFetch(url, options);
+                }
+                authPromptShown = false;
+            }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res;
+        }
+
+        function fmt(n, d = 2) {
+            if (n === null || n === undefined || Number.isNaN(n)) return '—';
+            const abs = Math.abs(n);
+            if (abs >= 1e6) return (n / 1e6).toFixed(d) + 'M';
+            if (abs >= 1e3) return (n / 1e3).toFixed(d) + 'k';
+            return n.toFixed(d);
+        }
+        function fmtPnl(n) {
+            if (n === null || n === undefined) return '—';
+            const sign = n >= 0 ? '+$' : '-$';
+            return sign + fmt(Math.abs(n));
+        }
+        function fmtTs(epoch) {
+            if (!epoch) return '—';
+            const d = new Date(epoch * 1000);
+            return d.toLocaleTimeString();
+        }
+        function escapeHtml(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        const $ = (id) => document.getElementById(id);
+
+        async function refresh() {
+            try {
+                $('status-text').innerHTML = '<span class="spinner"></span>Loading state…';
+                const res = await authFetch('/api/autoresearch/state');
+                const data = await res.json();
+                render(data);
+                $('status-text').textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
+            } catch (e) {
+                $('status-text').textContent = `Error: ${e.message}`;
+            }
+        }
+
+        function render(d) {
+            // Top stats
+            $('target-pnl').textContent = '$' + fmt(d.target_pnl, 0);
+            $('pool-size').textContent = `${d.pool_size} / ${d.pool_cap}`;
+
+            // Health warnings
+            const warn = $('health-warning');
+            if (d.orphan_count > 0) {
+                warn.style.display = 'block';
+                warn.textContent = `${d.orphan_count} strategy stats reference IDs not in the active pool. Run "Reseed" to align them.`;
+            } else {
+                warn.style.display = 'none';
+            }
+
+            // Headline metrics
+            const headline = $('headline');
+            headline.innerHTML = `
+                <div class="ar-metric">
+                    <div class="label">Above Target</div>
+                    <div class="value pnl-pos">${d.above_target}</div>
+                    <div class="sub">Strategies past $${fmt(d.target_pnl, 0)} P/L</div>
+                </div>
+                <div class="ar-metric">
+                    <div class="label">Goal Progress</div>
+                    <div class="value">${Math.min(d.above_target, 3)} / 3</div>
+                    <div class="sub">${d.above_target >= 3 ? '✓ Goal met' : 'Keep evolving'}</div>
+                </div>
+                <div class="ar-metric">
+                    <div class="label">Pool Size</div>
+                    <div class="value">${d.pool_size}</div>
+                    <div class="sub">Cap: ${d.pool_cap}</div>
+                </div>
+                <div class="ar-metric">
+                    <div class="label">Losers</div>
+                    <div class="value pnl-neg">${d.loser_count}</div>
+                    <div class="sub">Strategies below 0 P/L</div>
+                </div>
+                <div class="ar-metric">
+                    <div class="label">Orphans</div>
+                    <div class="value ${d.orphan_count > 0 ? 'pnl-neg' : ''}">${d.orphan_count}</div>
+                    <div class="sub">${d.orphan_count > 0 ? 'In stats, not in pool' : 'Pool is consistent'}</div>
+                </div>
+            `;
+
+            // Goal bar
+            const progressPct = Math.min(100, (d.above_target / 3) * 100);
+            $('goal-bar-fill').style.width = progressPct + '%';
+            $('goal-progress-text').textContent = `${Math.min(d.above_target, 3)} / 3`;
+            $('goal-bar-left').textContent = `${d.above_target} strategies above target`;
+            const poolPct = d.pool_size > 0 ? ((d.above_target / d.pool_size) * 100).toFixed(1) : '0';
+            $('goal-bar-right').textContent = `${poolPct}% of pool`;
+
+            // Winners
+            $('winner-count').textContent = d.above_target;
+            const winnersEl = $('winners-list');
+            if (d.top_winners.length === 0) {
+                winnersEl.innerHTML = '<div class="empty">No winners yet. Run an evolution cycle to seed profitable strategies.</div>';
+            } else {
+                winnersEl.innerHTML = d.top_winners.map(w => `
+                    <div class="strat-row">
+                        <span class="id">${w.id.slice(0, 8)}</span>
+                        <span class="name" title="${escapeHtml(w.name)}">${escapeHtml(w.name)}</span>
+                        <span class="trades">t=${w.trades} w=${w.wins}</span>
+                        <span class="pnl pnl-pos">${fmtPnl(w.current_pnl)}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Losers
+            $('loser-count').textContent = d.loser_count;
+            const losersEl = $('losers-list');
+            if (d.top_losers.length === 0) {
+                losersEl.innerHTML = '<div class="empty">No losers — every strategy is profitable.</div>';
+            } else {
+                losersEl.innerHTML = d.top_losers.map(w => `
+                    <div class="strat-row">
+                        <span class="id">${w.id.slice(0, 8)}</span>
+                        <span class="name" title="${escapeHtml(w.name)}">${escapeHtml(w.name)}</span>
+                        <span class="trades">t=${w.trades} w=${w.wins}</span>
+                        <span class="pnl pnl-neg">${fmtPnl(w.current_pnl)}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Iteration log
+            $('iter-count').textContent = d.iterations.length;
+            const iterEl = $('iter-log');
+            if (d.iterations.length === 0) {
+                iterEl.innerHTML = '<div class="empty">No iterations yet. Press "Run Evolution Cycle" to seed a new pool.</div>';
+            } else {
+                iterEl.innerHTML = d.iterations.slice().reverse().map(it => `
+                    <div class="line">
+                        <span class="ts">${fmtTs(it.ts)}</span> ·
+                        seed=<span class="n">${it.seed}</span> ·
+                        pool=<span class="n">${it.pool_size}</span> ·
+                        above \$2000=<span class="${it.n_above_2000 >= 3 ? 'ok' : 'err'}">${it.n_above_2000}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function runCycle() {
+            const btn = $('run-btn');
+            btn.disabled = true;
+            $('status-text').innerHTML = '<span class="spinner"></span>Running evolution cycle… (this can take a minute)';
+            try {
+                const res = await authFetch('/api/autoresearch/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ seed: Math.floor(Math.random() * 1e6), pool_size: 50, min_above_target: 5, market_steps: 10000 })
+                });
+                const data = await res.json();
+                $('status-text').innerHTML = `Cycle complete: ${data.n_above_2000} strategies above $2000, pool of ${data.pool_size}`;
+                await refresh();
+            } catch (e) {
+                $('status-text').textContent = `Cycle failed: ${e.message}`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        $('run-btn').addEventListener('click', runCycle);
+        $('refresh-btn').addEventListener('click', refresh);
+        $('reseed-btn').addEventListener('click', runCycle);
+
+        refresh();
+        setInterval(refresh, 15000);
+    })();
+    </script>
+</body>
+</html>
